@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>EUPAN: Eukaryotic PAN-genome analysis toolkit</title>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+	<script src="js/jquery-2.1.4.min.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+	<div class="container">
+		<img src="images/eupan_logo.svg" alt="logo">
+		<div class="navbar navbar-default">
+			
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a href="index.html" class="navbar-brand">EUPAN</a>
+					<ul class="navbar-nav nav">
+						<li>
+							<a href="index.html">Home</a>
+						</li>
+						<li><a href="installation.html">Installation</a></li>
+						<li class="active"><a href="manual.html">Manual</a></li>
+						<li><a href="sop.html">SOP</a></li>
+						<li><a href="download.html">Download</a></li>
+					</ul>
+				</div>
+			</div>
+			
+		</div>
+		<div class="row">
+		<div class="col-md-2">
+			<ul class="nav nav-tabs nav-stacked">
+				<li><a href="#eupan">EUPAN</a></li>
+				<li><a href="#eupanlsf">EUPAN-LSF</a></li>
+			</ul>
+		</div>
+		<div class="col-md-10">
+			<section id="eupan">
+				<h3>EUPAN</h3>
+				<pre>eupan tool list:
+        qualSta         View the overall sequencing quality of a large number of files
+        trim            Trim or filter low-quality reads parallelly
+        alignRead       Map reads to a reference parallelly
+        sam2bam         Covert alignments (.sam) to sorted .bam files
+        bamSta          Statistics of parallel mapping
+        assemble        Assemble reads parallelly
+        assemSta        Statistics of parallel assembly
+        getUnalnCtg     Extract the unaligned contigs from nucmer alignment (processed by quast)
+        rmRedundant     Remove redundant contigs of a fasta file
+        pTpG            Get the longest transcripts to represent genes
+        geneCov         Calculate gene body coverage and CDS coverage
+        geneExist       Determine gene presence-absence based on gene body coverage and CDS coverage
+        subSample       Select subset of samples from gene PAV profile
+        gFamExist       Determine gene family presence-absence based on gene presence-absence
+        bam2bed         Calculate genome region presence-absence from .bam
+        fastaSta        Calculate statistics of fasta file</pre>
+
+<ol>
+<h4><li> qualSta </li></h4>
+<p>"qualSta" tool is used to check qualities of .fastq/.fastq.gz files on a large scale. It will plot the quality statistics automatically.</p>
+
+<pre>Usage: eupan qualSta [options] <data_directory> <output_directory></pre>
+
+<p>The script will call fastqc program, so please make sure fastqc is in your
+PATH, or you need to use <code>-f</code> option to tell the program where fastqc locates.</p>
+
+<p>Necessary input description:</p>
+<pre>data_directory   &ltstring&gt        This directory should contain many sub-directories
+                                 named by sample names, such as CX101, B152,etc.
+                                 In each sub-directory, there should be several 
+                                 sequencing files ended by .fastq or .fastq.gz.
+
+output_directory   &ltstring&gt      Both final output files and intermediate results 
+                                 will be found in this directory. To avoid 
+                                 overwriting of existing files. We kindly request
+                                 that the output_directory should not exist. It is
+                                 to say, this directory will be created by the 
+                                 script itself.
+
+Options:
+     -h                          Print this usage page.
+
+     -f            &ltstring&gt      The directory where the executable file (fastqc) 
+                                 locate. If this option isn't given, we assume 
+                                 that it is in your PATH.
+     
+     -t            &ltint&gt         Specifies the number of files which can be processed
+                                 simultaneously. This parameter is sent to fastqc 
+                                 program. It is recommended to set as the number of 
+                                 files within each sample. Pay attention that the
+                                 machine should have this number of threads.
+                                 default: 1 </pre>
+
+<p>Example command:</p>
+      <pre>eupan qualSta -f /path/to/Fastqc -t 4 data/ preview_quality/</pre>
+
+<h4><li> trim </li></h4>
+<p>"trim" tool is used to trim or filter raw sequencing data to generate high-quality paired-end fastq data.</p>
+
+
+<pre>Usage: eupan trim [options] <fastq_data_directory> <output_directory> <Trimmomatic_directory></pre>
+
+<p>The script will call trimmomatic program and parameter files within trimmomatic
+directory is also needed. So the directory where trimmomatic locates should be
+given to the script as a necessary input.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>fastq_data_directory   &ltstring&gt    This directory should contain many sub-directories
+                                     named by sample names, such as CX101, B152,etc.
+                                     In each sub-directory, there should be several 
+                                     sequencing files ended by .fastq(or .fq) or .fastq.gz(or .fq.gz).
+
+  output_directory       &ltstring&gt    High-quality reads will be output to this directory. 
+                                     To avoid overwriting of existing files. We kindly request
+                                     that the output_directory should not exist. It is
+                                     to say, this directory will be created by the 
+                                     script itself.
+
+  Trimmomatic_directory  &ltstring&gt    Directory where trimmometic program locates.
+
+Options:
+     -h                              Print this usage page.
+
+     -t                   &ltint&gt      thread number
+
+     -a                   &ltstring&gt   Adaptor file in fasta utilized by trimmomatic program.
+                                     Default: trimmomatoc_dir/adapters/TruSeq3-PE-2.fa
+     
+     -s                   &ltstring&gt   Suffix of the fastq_file. Check your sequencing data and
+                                     change it if needed.
+                                     Default: ".fq.gz"
+
+     -k                   &ltstring&gt   Linker for paired_end identifer. Paired-end fastq file
+                                     should end with *1suffix or *2suffix, where suffix is
+                                     ".fq.gz"( or ".fastq", etc. See -s option) and * is the
+                                     linker such as "_".As an example, the file should 
+                                     be like CX123_1.fq.gz (linker is "_", suffix is ".fq.gz")
+                                     or BX125_R1.fastq(linker is "_R", suffix is ".fastq")
+                                     Default: "_"
+
+     -p                   &lt33 or 64&gt Quality score version. 
+                                     Default: 33 (phred+33)
+
+     -i                   &ltint&gt      Parameter passed to Trimmomatic (LEADING or TRAILING). 
+                                     Specifies the minimum  quality required to keep a base at the 
+                                     head or tail of a read.
+                                     Default: 20. 
+
+     -w                   &ltint&gt      Parameter passed to Trimmomatic (SLIDINGWINDOW).specifies the 
+                                     number of bases to average across.
+                                     Default: 4.
+     
+     -n                   &ltint&gt      Parameter passed to Trimmomatic (quality for SLIDINGWINDOW).
+                                     Default: 20.
+
+     -m                   &ltint&gt      Parameter passed to Trimmomatic (MINLEN).Specifies the minimum 
+                                     length of reads to be kept.
+                                     Default: 35.
+
+     -j                   &ltint&gt      Parameter passed to Trimmomatic (HEADCROP). The number of bases 
+                                     to remove from the start of the read. If it is set to 0, no base
+                                     will be removed from the head.
+                                     Default: 0.</pre>
+
+<p>Example commands:</p>
+
+	<pre>eupan trim -p 64 -t 4 data/ trim/ /path/to/Trimmomatic/
+eupan trim -p 33 -t 4 -w 83 -m 83 data/ filter/ /path/to/Trimmomatic/</pre>
+
+<h4><li> alignRead </li></h4>
+<p>"alignRead" tool is used to map reads to the genome on large scale.</p>
+
+
+<pre>Usage: eupan align [options] <fastq_data_directory> <output_directory> <Mapping_tool_directory> <alignment_index></pre>
+
+
+<p>The script will call mapping program (bwa mem or bowtie2), so the directory where mapping tool locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>fastq_data_directory      &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, there should be several 
+                                      sequencing files ended by .fq(.gz) or .fastq(.gz).
+
+  output_directory        &ltstring&gt    Alignment results will be output to this directory.
+                                      To avoid overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  Mapping_tool_directory  &ltstring&gt    Directory where bwa or bowtie2 program locates.
+
+  Alignment_index         &ltstring&gt    bowtie2 index built from bowtie2-build program;
+                                      or bwa index built from bwa index.   
+
+Options:
+     -h                              Print this usage page.
+
+     -f                   &ltstring&gt   Select a mapping tool. Can be "bwa" or "bowtie2".
+                                     Default: bwa
+
+     -t                   &ltint&gt      Threads used.
+                                     Default: 1
+
+     -s                   &ltstring&gt   Suffix of the fastq_file. Check your sequencing data and
+                                     change it if needed.
+                                     Default: ".fq.gz"
+
+     -k                   &ltstring&gt   Linker for paired_end identifer. Paired-end fastq file
+                                     should end with *1suffix or *2suffix, where suffix is
+                                     ".fq.gz"( or ".fastq", etc. See -s option) and * is the
+                                     linker such as "_".As an example, the file should 
+                                     be like CX123_1.fq.gz (linker is "_", suffix is ".fq.gz")
+                                     or BX125_R1.fastq(linker is "_R", suffix is ".fastq")
+                                     Default: "_"
+
+     -m                   &ltint&gt      min insertion length, for bowtie2 only 
+                                     Default: 0
+   
+     -n                   &ltint&gt      max insertion length, for bowtie2 only
+                                     Default: 1000</pre>
+
+<p>Examples:</p>
+	<pre>eupan alignRead -f bwa -t 4 trim/data/ map2pan/ /path/to/bwa/ pan/pan.fa
+eupan alignRead -f bowtie2 -t 4 trim/data/ map2pan/ /path/to/bowtie2/ pan/pan</pre>
+
+<h4><li> sam2bam </li></h4>
+<p>"sam2bam" tool is used to adjust mapping results including:</p>
+<ol>
+ <li>coverting sam to bam</li>
+ <li>sorting bam</li>
+ <li>merging bam</li>
+ <li>indexing bam</li>
+</ol>
+<br>
+<pre>Usage: eupan sam2bam [options]  <mapping_directory> <output_directory> <samtools_directory></pre>
+
+<p>The script will call samtools program, so the directory where samtools locates is needed. </p>
+
+<p>Necessary input description:</p>
+  <pre>  mapping_directory      &ltstring&gt     This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, One or more mapping results,
+                                      *.sam, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  QUAST_directory         &ltstring&gt    samtools directory where executable samtools locates.
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1</pre>
+<p>Example command:</p>
+	<pre>eupan sam2bam -t 4 map2pan/data/ panBam/ /path/to/samtools-1.3/</pre>
+
+<h4><li> bamSta </li></h4>
+<p>"bamSta" tool is used to check statistics of <code>.bam</code> files. </p>
+
+
+<pre>Usage: eupan bamSta [commands] ...
+Commands:
+        basic               calculate basic statistics
+        cov                 calculate genome coverage</pre>
+
+<p>"bamSta" contains two sub-programs: 1)"basic" to provide basic alignment statistics and 2)"cov" to provide the coverage of the genome.</p>
+
+<h5>5.1 basic</h5>
+<pre>Usage: eupan bamSta basic [options]  <bam_directory> <output_directory> <bamUtil_directory></pre>
+
+<p>eupan bamSta basic is used to check the basic statistics of mapping.</p>
+
+<p>The script will call bam_stats (in BamUtil), so the directory where bamUtil locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  bamUtil_directory       &ltstring&gt    bamUtil directory where bin/bam locates.</pre>
+
+<p>Example command:</p>
+	<pre>eupan bamSta basic refBam/data/ refBamSta/basic/ /path/to/bamUtil/</pre>
+
+<h5>5.2cov</h5>
+<pre>Usage: eupan bamSta cov [options]  <bam_directory> <output_directory> <qualimap_directory></pre>
+
+<p>eupan bamSta cov is used to check the coverages of the genome.</p>
+
+<p>The script will call bam_stats program under BamUtil, so the directory where bamUtil locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  bamUtil_directory       &ltstring&gt    qualimap directory where executable qualimap locates.
+
+Options:
+     -h                               Print this usage page.
+
+     -m                   &ltstring&gt    Maximum memory size for java use
+                                      Default: 12G
+
+     -t                   &ltint&gt       Thread number.
+                                      Default:4</pre>
+<p>Example command:</p>
+	 <pre>eupan bamSta cov refBam/data/ refBamSta/cov/ /path/to/qualimap/</pre>
+
+<h4><li> assemble </li></h4>
+<p>"assemble" is used to assemble short reads. It contains 2 sub-programs: <p>
+<p>1) "soapdenovo"    raw sopadenovo2 assembly with fixed Kmer</p>
+<p>2) "linearK"       iterative use of soapdenovo2 with flexible Kmer</p>
+ 
+<pre>Usage: eupan assemble [commands] ...
+
+Commands:
+        soapdenovo    Aseembly with SOAPdenovo 2.
+        linearK       Assembly with an iterative use of SOAPdenovo 2 (Recommended).</pre>
+
+<h5>6.1 soapdenovo</h5>
+<pre>Usage: eupan assemble soapdenovo [options] <fastq_data_directory> <output_directory> <soapdenovo_directory></pre>
+
+<p>Necessary input description:</p>
+
+  <pre>  fastq_data_directory    &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, there should be several 
+                                      sequencing files ended by .fastq or .fastq.gz.
+
+  output_directory        &ltstring&gt    Alignment results will be output to this directory.
+                                      To avoid overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  sopadenovo_directory    &ltstring&gt    directory where soapdenovo2 executable files exists   
+
+Options:
+     -h                              Print this usage page.
+
+     -t                   &ltint&gt      Threads used.
+                                     Default: 1
+
+     -s                   &ltstring&gt    Suffix of files within data_directory.
+                                      Default: .fq.gz 
+
+     -k                   &ltint&gt      Kmer.
+                                     Default: 35
+
+     -c                   &ltstring&gt    Parameters of soapdenovo2 config file. 8 parameters ligated by comma
+                                        1)maximal read length
+                                        2)average insert size
+                                        3)if sequence needs to be reversed
+                                        4)in which part(s) the reads are used
+                                        5)use only first N bps of each read
+                                        6)in which order the reads are used while scaffolding
+                                        7)cutoff of pair number for a reliable connection (at least 3 for 
+                                          short insert size)
+                                        8)minimum aligned length to contigs for a reliable read location 
+                                          (at least 32 for short insert size)
+                                      Default: 80,460,0,3,80,1,3,32
+
+     -g                               enable gapcloser </pre>
+
+
+<h5>6.2 linearK</h5>
+<pre>Usage: eupan assemble linearK [options] <fastq_data_directory> <output_directory> <soapdenovo_directory></pre>
+
+<p>eupan assemble linearK is used to assemble high-quality reads on large scale.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  fastq_data_directory    &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, there should be several 
+                                      sequencing files ended by .fastq or .fastq.gz.
+
+  output_directory        &ltstring&gt    Alignment results will be output to this directory.
+                                      To avoid overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  sopadenovo_directory    &ltstring&gt    directory where soapdenovo2 executable files exists   
+
+Options:
+     -h                              Print this usage page.
+
+     -t                   &ltint&gt      Threads used.
+                                     Default: 1
+
+     -g                   &ltint&gt       Genome size. Used to infer sequencing depth. 
+                                      Default: 380000000 (460M)
+     
+     -s                   &ltstring&gt    Suffix of files within data_directory.
+                                      Default: .fq.gz 
+
+     -r                   &ltstring&gt    Parameters of linear function: Kmer=2*int(0.5*(a*Depth+b))+1. 
+                                      The parameter should be input as "a,b".
+                                      Default: 0.76,20
+
+     -w                   &ltint&gt       Step-length of Kmer change.
+                                      Default: 2
+
+     -u                   &ltint&gt       Upper limmited times of Kmer change. This parameter is set to reduce
+                                      redundancy computation.
+                                      Default: 10
+
+     -c                   &ltstring&gt    Parameters of soapdenovo2 config file. 8 parameters ligated by comma
+                                        1)maximal read length
+                                        2)average insert size
+                                        3)if sequence needs to be reversed
+                                        4)in which part(s) the reads are used
+                                        5)use only first N bps of each read
+                                        6)in which order the reads are used while scaffolding
+                                        7)cutoff of pair number for a reliable connection (at least 3 for 
+                                          short insert size)
+                                        8)minimum aligned length to contigs for a reliable read location 
+                                          (at least 32 for short insert size)
+                                      Default: 80,460,0,3,80,1,3,32
+
+     -n                   &ltint&gt       The minimum length of contigs. Contigs shorter than this length will
+                                      NOT be used when calculating N50.
+                                      Default: 100
+
+     -k                   &ltstring&gt    Available Kmer range. Give comma-seperated lower bound and upper bound.
+                                      Default: 15,127
+
+     -m                   &ltint&gt       The number of consecutive Ns to be broken down to contigs.This is used 
+                                      in the process break gapclosed scaffolds to contigs.
+                                      Default: 10.</pre>
+
+
+<h4><li> assemSta </li></h4>
+<p>"assemSta" tool is used to map assembled contigs to reference and to check the statistics of assembled contigs (or scaffolds).</p>
+
+
+<pre>Usage: eupan assemSta [options]  <assembly_directory> <output_directory> <QUAST_directory> <reference.fa></pre>
+
+<p>The script will call QUAST program, so the directory where quast.py locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  assembly_directory      &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, assembly results, including 
+                                      files *.scafSeq and *.contig, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  QUAST_directory         &ltstring&gt    QUAST directory where quast.py locates.
+
+  reference.fa            &ltstring&gt    Reference sequence file (.fa or .fa.gz).
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -m                   &ltint&gt       Minimum contig length used for assessment.
+                                      Default: 500
+
+     -g                               Check the statistics of gap-closed assemblies if -g is 
+                                      enabled. In the assembly directory of each sample, 
+                                      *_gc.scafSeq and *_gc.contig should exist.
+                                      Default: check statistics of raw assemblies
+
+     -s                               Check the statistics of assembled scaffolds if -s is enabled.
+                                      Default: check statistics of assembled contigs</pre>
+
+<h4><li> getUnalnCtg </li></h4>
+<p>eupan getUnalnCtg is used to collect unaligned contigs.</p>
+
+<pre>Usage: eupan getUnalnCtg [options]  <assembly_directory> <QUAST_assess_directory> <output_directory></pre>
+
+
+
+<p>Necessary input description:</p>
+
+ <pre>  assembly_directory      &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, assembly results, including 
+                                      file *.contig, should exist.
+
+  QUAST_assess_directory  &ltstring&gt    This directory should contain many sub-directories 
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, quast assessment, including 
+                                      directory file contigs_reports, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+Options:
+     -h                               Print this usage page.
+     -m                               Use gap-closed contigs instead of raw contigs</pre>
+
+<h4><li> "rmRedundant" </li></h4>
+<p>"rmRedundant" is used to cluster sequences and extract the representative ones.</p>
+
+<pre>eupan rmRedundant [commands]</pre>
+
+
+<p>Available commands:</p>
+      <pre>cdhitCluster      Clustering with CDHIT, fast but only accept identity >0.8
+blastCluster      Clustering with Blastn</pre>
+
+<h5>9.1 cdhitCluster</h5>
+<pre>Usage: eupan rmRedundant cdhitCluster [options] <input_fasta_file> <output_directory> <cdhit_directory></pre>
+
+<p>eupan rmRedundant cdhitCluster is used to cluster contigs and remove the redundant ones.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  input_fasta_file        &ltstring&gt    Contig sequences to be clustereed.
+
+  output_directory        &ltstring&gt    Output directory.
+
+  cdhit_directory         &ltstring&gt    directory where cdhit-est locates. 
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -c                   &ltfloat&gt     Sequence identity threshold
+                                      Default: 0.9</pre>
+
+<h5>9.2 blastCluster</h5>
+<pre>Usage: eupanLSF rmRedundant blastCluster [options] <input_fasta_file> <output_directory> <blast_directory></pre>
+
+<p>eupanLSF rmRedundant blastCluster is used to cluster contigs and remove the redundant ones.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  input_fasta_file        &ltstring&gt    Contig sequences to be clustereed.
+
+  output_directory        &ltstring&gt    Output directory.
+
+  blast_directory         &ltstring&gt    directory where blastn and makeblastdb locate. 
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -c                   &ltfloat&gt     Sequence identity threshold
+                                      Default: 0.5</pre>
+<h4><li> pTpG</li></h4>
+
+<p>"pTpG" tool is to obtain the longest trancript of each gene.</p>
+
+<pre>Usage: eupan perTranPerGene <input_file.gtf> <output>
+Option:
+   -e    Check "exon" length instead of check "CDS" length
+         Note "exon" or "CDS" should exist in the 3rd column of the input file</pre>
+
+<h4><li> geneCov</li></h4>
+<p>"geneCov" tool is used to calculate gene body coverage and CDS coverage of each gene.
+</p>
+<pre>Usage: eupan geneCov [options]  <bam_directory> <output_directory> <genome_seq> <gene_annotation>
+</pre>
+<p>This script will call samtools and ccov.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  genome_sequence         &ltstring&gt    genome sequences in a single fasta
+
+  gene_annotation         &ltstring&gt    gene annotations in a single gtf file
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Thread number.
+                                      Default:1</pre>
+
+
+<h4><li> geneExist</li></h4>
+
+<p>"geneExist" tool is used to determine gene presence-absence.</p>
+<pre>eupan geneExist gene_file cds_file min_gene_cov min_cds_cov >output</pre>
+
+<p>Inputs:</p>
+<pre>gene_file     &ltstring&gt   gene body coverage file
+cds_file      &ltstring&gt   CDS coverage file
+min_gene_cov  &ltfloat&gt    minimum gene body coverage
+min_cds_cov   &ltfloat&gt    minimum CDS coverage</pre>
+
+<h4><li> subSample</li></h4>
+<p>"subSample" tool is used to select a subset of samples of a PAV profile.
+</p>
+<pre>Usage: eupan subSample gene_existence_matrix sample_list >output
+</pre>
+<p>Inputs:</p>
+    <pre>gene_existence_matrix      gene presence/absence matrix
+sample_list                a sample list file</pre>
+
+<h4><li> gFamExist</li></h4>
+<p>"gFamExist" is used to determine gene family presence-absence from gene presence=absence
+</p>
+<pre>Usage: eupan gFamExist <geneExist.txt> <geneFam.info> > geneFamExist.txt
+</pre>
+<p>Inputs:</p>
+
+    <pre>geneExist.txt         gene PAV matrix
+geneFam.info          gene family annotation</pre>
+
+
+<h4><li> bam2bed</li></h4>
+
+<p>"bam2bed" tool is used to calculate the covered region of the genome.</p>
+
+<pre>Usage: eupan bam2bed [options]  <bam_directory> <output_directory> </pre>
+
+<p>The outputs are covered fragments without overlap in 3-column .bed format. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory. To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.</pre>
+
+
+<h4><li> fastaSta</li></h4>
+<p>"fastaSta" tool is used to check basic statistics of a fasta file.
+</p>
+<pre>Usage: eupan fastaSta <fasta></pre>
+<p>Inputs:</p>
+      <pre>fasta   &ltstring&gt     fasta file  </string>
+</ol>
+			</section>
+		
+		
+
+    <br> <br>
+    <section id="eupanlsf">
+      <h3>EUPAN-LSF</h3>
+      <pre>eupan tool list:
+        qualSta         Run fastqc on a large number of files
+        mergeQualSta    View the overall sequencing quality by combining fastqc outputs
+        trim            Trim or filter low-quality reads parallelly
+        align           Map reads to a reference parallelly
+        sam2bam         Convert alignments (.sam) to sorted .bam files
+        bamSta          Statistics of parallel mapping
+        assemble        Assemble reads parallelly
+        assemSta        Statistics of parallel assembly
+        mergeAssemSta   Merge statistics of all indivduals to a single file
+        getUnalnCtg     Extract the unaligned contigs from nucmer alignment (processed by quast)
+        mergeUnalnCtg   Merge the unaligned contigs into a single file
+        rmRedundant     Remove redundant contigs of a fasta file
+        pTpG            Get the longest transcripts to represent genes
+        geneCov         Calculate gene body coverage and CDS coverage
+        mergeGeneCov    Merge gene body coverage and cds coverage of each sample to two summary files
+        geneExist       Determine gene presence-absence based on gene body coverage and CDS coverage
+        subSample       Select subset of samples from gene PAV profile
+        gFamExist       Determine gene family presence-absence based on gene presence-absence
+        bam2bed         Calculate genome region presence-absence from .bam
+        fastaSta        Calculate statistics of fasta file</pre>
+
+
+<ol>
+<h4><li> qualSta </li></h4>
+<p>"qualSta" tool is used to check qualities of .fastq/.fastq.gz files on a large scale. It will plot the quality statistics automatically.</p>
+
+<pre>Usage: eupanLSF qualSta [options] <data_directory> <output_directory></pre>
+
+<p>The script will call fastqc program, so please make sure fastqc is in your
+PATH, or you need to use -f option to tell the script where it locates.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  data_directory   &ltstring&gt      This directory should contain many sub-directories
+                                 named by sample names, such as CX101, B152,etc.
+                                 In each sub-directory, there should be several 
+                                 sequencing files ended by .fastq or .fastq.gz.
+
+  output_directory &ltstring&gt      Both final output files and intermediate results 
+                                 will be found in this directory. To avoid 
+                                 overwriting of existing files. We kindly request
+                                 that the output_directory should not exist. It is
+                                 to say, this directory will be created by the 
+                                 script itself.
+
+Options:
+     -h                          Print this usage page.
+
+     -f            &ltstring&gt      The directory where the executable file (fastqc) 
+                                 locate. If this option isn't given, we assume 
+                                 that it is in your PATH.
+     
+     -t            &ltint&gt         Specifies the number of files which can be processed
+                                 simultaneously. This parameter is sent to fastqc 
+                                 program. It is recommended to set as the number of 
+                                 files within each sample. Pay attention that the
+                                 machine should have this number of threads.
+                                 default: 1 
+
+     -q            &ltstring&gt      The queue name for job submiting. 
+                                  default: default queue</pre>
+
+<p>Example command:</p>
+      <pre>eupanLSF qualSta -f /path/to/Fastqc -t 4 data/ preview_quality/</pre>
+
+<h4><li> mergeQualSta </li></h4>
+
+<pre>Usage: eupanLSF mergeQualSta <directory>
+directory  <string>  The exact output of "eupanLSF qualSta".</pre>
+
+<h4><li> trim </li></h4>
+<p>"trim" tool is used to trim or filter raw sequencing data to generate high-quality paired-end fastq data.</p>
+
+Usage: eupanLSF trim [options] <fastq_data_directory> <output_directory> <Trimmomatic_directory>
+
+<p>The tool will call trimmomatic program and parameter files within trimmomatic
+directory is also needed. So the directory where trimmomatic locates should be
+given to the script as a necessary input.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  fastq_data_directory   &ltstring&gt    This directory should contain many sub-directories
+                                     named by sample names, such as CX101, B152,etc.
+                                     In each sub-directory, there should be several 
+                                     sequencing files ended by .fastq(or .fq) or .fastq.gz(or .fq.gz).
+
+  output_directory       &ltstring&gt    High-quality reads will be output to this directory. 
+                                     To avoid overwriting of existing files. We kindly request
+                                     that the output_directory should not exist. It is
+                                     to say, this directory will be created by the 
+                                     script itself.
+
+  Trimmomatic_directory  &ltstring&gt    Directory where trimmometic program locates.
+
+Options:
+     -h                              Print this usage page.
+
+     -t                   &ltint&gt      thread number
+
+     -a                   &ltstring&gt   Adaptor file in fasta utilized by trimmomatic program.
+                                     Default: trimmomatoc_dir/adapters/TruSeq3-PE-2.fa
+     
+     -s                   &ltstring&gt   Suffix of the fastq_file. Check your sequencing data and
+                                     change it if needed.
+                                     Default: ".fq.gz"
+
+     -k                   &ltstring&gt   Linker for paired_end identifer. Paired-end fastq file
+                                     should end with *1suffix or *2suffix, where suffix is
+                                     ".fq.gz"( or ".fastq", etc. See -s option) and * is the
+                                     linker such as "_".As an example, the file should 
+                                     be like CX123_1.fq.gz (linker is "_", suffix is ".fq.gz")
+                                     or BX125_R1.fastq(linker is "_R", suffix is ".fastq")
+                                     Default: "_"
+     -p                   &lt33 or 64&gt Quality score version. 
+                                     Default: 33 (phred+33)
+
+
+     -i                   &ltint&gt      Parameter passed to Trimmomatic (LEADING or TRAILING). 
+                                     Specifies the minimum  quality required to keep a base at the 
+                                     head or tail of a read.
+                                     Default: 20. 
+
+     -w                   &ltint&gt      Parameter passed to Trimmomatic (SLIDINGWINDOW).specifies the 
+                                     number of bases to average across.
+                                     Default: 4.
+     
+     -n                   &ltint&gt      Parameter passed to Trimmomatic (quality for SLIDINGWINDOW).
+                                     Default: 20.
+
+     -m                   &ltint&gt      Parameter passed to Trimmomatic (MINLEN).Specifies the minimum 
+                                     length of reads to be kept.
+                                     Default: 35.
+
+     -j                   &ltint&gt      Parameter passed to Trimmomatic (HEADCROP). The number of bases 
+                                     to remove from the start of the read. If it is set to 0, no base
+                                     will be removed from the head.
+                                     Default: 0.
+     -q                   &ltstring&gt   The queue name for job submiting. 
+                                     default: default queue</pre>
+
+<p>Example commands:</p>
+
+  <pre>eupanLSF trim -p 64 -t 4 data/ trim/ /path/to/Trimmomatic/
+eupanLSF trim -p 33 -t 4 -w 83 -m 83 data/ filter/ /path/to/Trimmomatic/</pre>
+
+<h4><li> alignRead </li></h4>
+<p>"alignRead" tool is used to map reads to the genome on large scale.</p>
+
+<pre>Usage: eupanLSF align [options]  <fastq_data_directory> <output_directory> <Mapping_tool_directory> <alignment_index></pre>
+
+<p>The script will call mapping program (bwa mem or bowtie2), so the directory where mapping tool locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  fastq_data_directory    &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, there should be several 
+                                      sequencing files ended by .fq(.gz) or .fastq(.gz).
+
+  output_directory        &ltstring&gt    Alignment results will be output to this directory.
+                                      To avoid overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  Mapping_tool_directory  &ltstring&gt    Directory where bwa or bowtie2 program locates.
+
+  Alignment_index         &ltstring&gt    bowtie2 index built from bowtie2-build program;
+                                      or bwa index built from bwa index.   
+
+Options:
+     -h                              Print this usage page.
+
+     -f                   &ltstring&gt   Select a mapping tool. Can be "bwa" or "bowtie2".
+                                     Default: bwa
+
+     -t                   &ltint&gt      Threads used.
+                                     Default: 1
+
+     -s                   &ltstring&gt   Suffix of the fastq_file. Check your sequencing data and
+                                     change it if needed.
+                                     Default: ".fq.gz"
+
+     -k                   &ltstring&gt   Linker for paired_end identifer. Paired-end fastq file
+                                     should end with *1suffix or *2suffix, where suffix is
+                                     ".fq.gz"( or ".fastq", etc. See -s option) and * is the
+                                     linker such as "_".As an example, the file should 
+                                     be like CX123_1.fq.gz (linker is "_", suffix is ".fq.gz")
+                                     or BX125_R1.fastq(linker is "_R", suffix is ".fastq")
+                                     Default: "_"
+
+     -m                   &ltint&gt      min insertion length, for bowtie2 only 
+                                     Default: 0
+   
+     -n                   &ltint&gt      max insertion length, for bowtie2 only
+                                     Default: 1000
+
+     -q            &ltstring&gt      The queue name for job submiting. 
+                                  default: default queue</pre>
+
+<p>Examples:</p>
+  <pre>eupanLSF alignRead -f bwa -t 4 trim/data/ map2pan/ /path/to/bwa/ pan/pan.fa
+eupanLSF alignRead -f bowtie2 -t 4 trim/data/ map2pan/ /path/to/bowtie2/ pan/pan</pre>
+
+<h4><li> sam2bam </li></h4>
+
+<pre>Usage: eupanLSF sam2bam [options]  <mapping_directory> <output_directory> <samtools_directory></pre>
+
+<p>eupanLSF sam2bam is used to adjust mapping results including: </p>
+<ol>
+ <li>coverting sam to bam</li>
+ <li>sorting bam</li>
+ <li>merging bam</li>
+ <li>indexing bam</li>
+</ol>
+<br>
+
+<p>The script will call samtools program, so the directory where samtools locates is needed. </p>
+
+<p>Necessary input description:</p>
+  <pre>  mapping_directory      &ltstring&gt     This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, One or more mapping results,
+                                      *.sam, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  QUAST_directory         &ltstring&gt    samtools directory where executable samtools locates.
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -q            &ltstring&gt      The queue name for job submiting. 
+                                  default: default queue</pre>
+
+<p>Example command:</p>
+  <pre>eupanLSF sam2bam -t 4 map2pan/data/ panBam/ /path/to/samtools-1.3/</pre>
+
+<h4><li> bamSta </li></h4>
+<p>"bamSta" tool is used to check statistics of <code>.bam</code> files. </p>
+
+<pre>Usage: eupanLSF bamSta [commands] ...</pre>
+
+<pre>Commands:
+        basic               calculate basic statistics
+        cov                 calculate genome coverage
+        mergeBasicSta       merge basic statistics of each individual
+        mergeCovSta         merge genome coverages of each individual</pre>
+
+
+<h5>6.1 basic</h5>
+<p>eupanLSF bamSta basic is used to check the basic statistics of mapping.</p>
+
+<pre>Usage: eupanLSF bamSta basic [options]  <bam_directory> <output_directory> <bamUtil_directory></pre>
+<p>The script will call bam_stats (in BamUtil), so the directory where bamUtil locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  bamUtil_directory       &ltstring&gt    bamUtil directory where bin/bam locates.
+
+Options:
+
+     -q            &ltstring&gt      The queue name for job submiting. 
+                                 default: default queue</pre>
+
+<h5>6.2 cov</h5>
+<p>eupanLSF bamSta cov is used to check the coverages of genome.</p>
+
+<pre>Usage: eupanLSF bamSta cov [options]  <bam_directory> <output_directory> <qualimap_directory></pre>
+<p>The script will call bam_stats program under BamUtil, so the directory where bamUtil locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  bamUtil_directory       &ltstring&gt    qualimap directory where executable qualimap locates.
+
+Options:
+     -h                               Print this usage page.
+
+     -m                   &ltstring&gt    Maximum memory size for java use
+                                      Default: 12G
+
+     -t                   &ltint&gt       Thread number.
+                                      Default:4
+
+     -q                   &ltstring&gt    LSF queue name
+                                      Default: default queue    </pre>
+
+<h5>6.3 mergeBasicSta<h5>
+<p>"bamSta mergeBasicSta" is used to collect and merge bam basic statistics.</p>
+
+<pre>Usage: eupanLSF bamSta mergeBasicSta [options] <directory> >output</pre>
+<p>Necessary input description:</p>
+
+  <pre>  directory        &ltstring&gt      directories of bamUtil results. 
+                                 Each directory contains sub-directories named
+                                 by sample names.
+                                 data/ directory of bamSta basic output.</pre>
+<h5>6.4 mergeCovSta</h5>
+<p>"bamSta mergeCovSta" is used to collect and merge bam coverage statistics.</p>
+
+<pre>Usage: eupanLSF bamSta mergeCovSta [options] <directory> >output</pre>
+<p>Necessary input description:</p>
+
+  <pre>directory        &ltstring&gt      directories of qualimap results. 
+                                 Each directory contains sub-directories named
+                                 by sample names.</pre>
+
+<h4><li> assemble </li></h4>
+<p>"assemble" is used to assemble short reads. It contains 2 sub-programs: </p>
+<p>1) "soapdenovo"    raw sopadenovo2 assembly with fixed Kmer</p>
+<p>2) "linearK"       iterative use of soapdenovo2 with flexible Kmer</p>
+ 
+<pre>Usage: eupanLSF assemble [commands] ...</pre>
+
+<pre>Commands:
+        soapdenovo    Aseembly with SOAPdenovo 2.
+        linearK       Assembly with an iterative use of SOAPdenovo 2 (Recommended).</pre>
+
+<h5>7.1 soapdenovo</h5>
+
+<pre>Usage: eupanLSF assemble soapdenovo [options] <fastq_data_directory> <output_directory> <soapdenovo_directory></pre>
+
+<p>eupanLSF assemble soapdenovo is used to assemble high-quality reads on large scale.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  fastq_data_directory    &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, there should be several 
+                                      sequencing files ended by .fastq or .fastq.gz.
+
+  output_directory        &ltstring&gt    Alignment results will be output to this directory.
+                                      To avoid overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  sopadenovo_directory    &ltstring&gt    directory where soapdenovo2 executable files exists   
+
+Options:
+     -h                              Print this usage page.
+
+     -t                   &ltint&gt      Threads used.
+                                     Default: 1
+
+     -s                   &ltstring&gt    Suffix of files within data_directory.
+                                      Default: .fq.gz 
+
+     -k                   &ltint&gt      Kmer.
+                                     Default: 35
+
+     -c                   &ltstring&gt    Parameters of soapdenovo2 config file. 8 parameters ligated by comma
+                                        1)maximal read length
+                                        2)average insert size
+                                        3)if sequence needs to be reversed
+                                        4)in which part(s) the reads are used
+                                        5)use only first N bps of each read
+                                        6)in which order the reads are used while scaffolding
+                                        7)cutoff of pair number for a reliable connection (at least 3 for 
+                                          short insert size)
+                                        8)minimum aligned length to contigs for a reliable read location 
+                                          (at least 32 for short insert size)
+                                      Default: 80,460,0,3,80,1,3,32
+
+     -g                               enable gapcloser 
+
+     -q                  &ltstring&gt     The queue name for job submiting. 
+                                      Default: default queue</pre>
+
+
+<h5>7.2 linearK</h5>
+<pre>Usage: eupanLSF assemble linearK [options] <fastq_data_directory> <output_directory> <soapdenovo_directory></pre>
+
+<p>Necessary input description:</p>
+
+  <pre>  fastq_data_directory    &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, there should be several 
+                                      sequencing files ended by .fastq or .fastq.gz.
+
+  output_directory        &ltstring&gt    Alignment results will be output to this directory.
+                                      To avoid overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  sopadenovo_directory    &ltstring&gt    directory where soapdenovo2 executable files exists   
+
+Options:
+     -h                              Print this usage page.
+
+     -t                   &ltint&gt      Threads used.
+                                     Default: 1
+
+     -g                   &ltint&gt       Genome size. Used to infer sequencing depth. 
+                                      Default: 380000000 (460M)
+     
+     -s                   &ltstring&gt    Suffix of files within data_directory.
+                                      Default: .fq.gz 
+
+     -r                   &ltstring&gt    Parameters of linear function: Kmer=2*int(0.5*(a*Depth+b))+1. 
+                                      The parameter should be input as "a,b".
+                                      Default: 0.76,20
+
+     -w                   &ltint&gt       Step-length of Kmer change.
+                                      Default: 2
+
+     -u                   &ltint&gt       Upper limmited times of Kmer change. This parameter is set to reduce
+                                      redundancy computation.
+                                      Default: 10
+
+     -c                   &ltstring&gt    Parameters of soapdenovo2 config file. 8 parameters ligated by comma
+                                        1)maximal read length
+                                        2)average insert size
+                                        3)if sequence needs to be reversed
+                                        4)in which part(s) the reads are used
+                                        5)use only first N bps of each read
+                                        6)in which order the reads are used while scaffolding
+                                        7)cutoff of pair number for a reliable connection (at least 3 for 
+                                          short insert size)
+                                        8)minimum aligned length to contigs for a reliable read location 
+                                          (at least 32 for short insert size)
+                                      Default: 80,460,0,3,80,1,3,32
+
+     -n                   &ltint&gt       The minimum length of contigs. Contigs shorter than this length will
+                                      NOT be used when calculating N50.
+                                      Default: 100
+
+     -k                   &ltstring&gt    Available Kmer range. Give comma-seperated lower bound and upper bound.
+                                      Default: 15,127
+
+     -m                   &ltint&gt       The number of consecutive Ns to be broken down to contigs.This is used 
+                                      in the process break gapclosed scaffolds to contigs.
+                                      Default: 10.
+     -q                   &ltstring&gt    The queue name for job submiting. 
+                                      Default: default queue</pre>
+
+<h4><li> assemSta </li></h4>
+<p>"assemSta" tool is used to map assembled contigs to reference and to check the statistics of assembled contigs (or scaffolds).</p>
+
+<pre>Usage: eupanLSF assemSta [options]  <assembly_directory> <output_directory> <QUAST_directory> <reference.fa></pre>
+
+<p>The script will call QUAST program, so the directory where quast.py locates is needed. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  assembly_directory      &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, assembly results, including 
+                                      files *_gc.scafSeq and *_gc.contig, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  QUAST_directory         &ltstring&gt    QUAST directory where quast.py locates.
+
+  reference.fa            &ltstring&gt    Reference sequence file (.fa or .fa.gz).
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -m                   &ltint&gt       Minimum contig length used for assessment.
+                                      Default: 500
+
+     -g                               Check the statistics of gap-closed assemblies if -g is 
+                                      enabled. In the assembly directory of each sample, 
+                                      *_gc.scafSeq and *_gc.contig should exist.
+                                      Default: check statistics of raw assemblies
+
+     -s                               Check the statistics of assembled scaffolds if -s is enabled.
+                                      Default: check statistics of assembled contigs</pre>
+
+<h4><li> mergeAssemSta </li></h4>
+<p>"mergeAssemSta" is used to collect statistices info of assembly from quast.</p>
+
+<pre>Usage: eupanLSF mergeAssemSta <QUAST_output_directory_list> > output_statistics</pre>
+
+<p>Necessary input description:</p>
+
+  <pre>QUAST_output_directory_list  &ltstring&gt    One or more of quast .
+
+  unaligned_contig_list   &ltstring&gt    File including a list of names of unaligned contigs. 
+                                      In each directory, there should be sub directories
+                                      named by the sample names.</pre>
+
+
+<h4><li> getUnalnCtg </li></h4>
+<p>eupan getUnalnCtg is used to collect unaligned contigs.</p>
+
+<pre>Usage: eupanLSF getUnalnCtg [options]  <assembly_directory> <QUAST_assess_directory> <output_directory></pre>
+
+<p>eupanLSF getUnalnCtg is used to collect unaligned contigs.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  assembly_directory      &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, assembly results, including 
+                                      file *_gc.contig, should exist.
+
+  QUAST_assess_directory  &ltstring&gt    This directory should contain many sub-directories 
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, quast assessment, including 
+                                      directory file contigs_reports, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+Options:
+     -h                               Print this usage page.
+     -m                               Use gap-closed contigs instead of raw contigs</pre>
+
+<h4><li> mergeUnalnCtg </li></h4>
+
+<p>"mergeUnalnCtg" is used to merge unaligned contigs of each individuals to a single file.</p>
+<pre>Usage: eupanLSF mergeUnalnCtg [options]  <unaln_directory> <output.fa>  </pre>
+
+<h4><li> "rmRedundant" </li></h4>
+<p>"rmRedundant" is used to cluster sequences and extract the representative ones.</p>
+
+<pre>Usage: eupanLSF rmRedundant [commands]</pre>
+<pre>Available commands:
+      cdhitCluster      Clustering with CDHIT, fast but only accept identity >0.8
+      blastCluster      Clustering with Blastn</pre>
+
+<h5>12.1 cdhitCluster</h5>
+<pre>Usage: eupanLSF rmRedundant cdhitCluster [options] <input_fasta_file> <output_directory> <cdhit_directory></pre>
+
+<p>eupanLSF rmRedundant cdhitCluster is used to cluster contigs and remove the redundant ones.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  input_fasta_file        &ltstring&gt    Contig sequences to be clustereed.
+
+  output_directory        &ltstring&gt    Output directory.
+
+  cdhit_directory         &ltstring&gt    directory where cdhit-est locates. 
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -c                   &ltfloat&gt     Sequence identity threshold
+                                      Default: 0.9
+     -q                   &ltstring&gt    The queue name for job submiting. 
+                                      Default: default queue</pre>
+
+<h5>12.2 blastCluster</h5>
+
+<pre>Usage: eupanLSF rmRedundant blastCluster [options] <input_fasta_file> <output_directory> <blast_directory></pre>
+<p>eupanLSF rmRedundant blastCluster is used to cluster contigs and remove the redundant ones.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  input_fasta_file        &ltstring&gt    Contig sequences to be clustereed.
+
+  output_directory        &ltstring&gt    Output directory.
+
+  blast_directory         &ltstring&gt    directory where blastn and makeblastdb locate. 
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Threads used.
+                                      Default: 1
+
+     -c                   &ltfloat&gt     Sequence identity threshold
+                                      Default: 0.5
+
+     -q                   &ltstring&gt    The queue name for job submiting. 
+                                      Default: default queue</pre>
+
+<h4><li> pTpG </li></h4>
+
+<p>"pTpG" tool is to obtain the longest trancript of each gene.</p>
+
+<pre>Usage: eupanLSF perTranPerGene <input_file.gtf> <output></pre>
+
+<pre>Option:
+   -e    Check "exon" length instead of check "CDS" length
+         Note "exon" or "CDS" should exist in the 3rd column of the input file</pre>
+
+<h4><li> geneCov </li></h4>
+<p>"geneCov" tool is used to calculate gene body coverage and CDS coverage of each gene.</p>
+
+<pre>Usage: eupanLSF geneCov [options]  <bam_directory> <output_directory> <genome_seq> <gene_annotation></pre>
+
+<p>eupanLSF geneCov is used to calculate gene coverages of each gene.</p>
+
+<p>The script will call samtools and ccov.</p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory.To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+  genome_sequence         &ltstring&gt    genome sequences in a single fasta
+
+  gene_annotation         &ltstring&gt    gene annotations in a single gtf file
+
+Options:
+     -h                               Print this usage page.
+
+     -t                   &ltint&gt       Thread number.
+                                      Default:1
+
+     -q                   &ltstring&gt    LSF queue name
+                                      Default: default queue   </pre> 
+
+<h4><li> mergeGeneCov </li></h4>
+<pre>Usage: eupanLSF mergeGeneCov <output_prefix> <data_directory> </pre>
+
+<h4><li> geneExist </li></h4>
+
+<p>"geneExist" tool is used to determine gene presence-absence.</p>
+<pre>eupanLSF geneExist gene_file cds_file min_gene_cov min_cds_cov >output</pre>
+
+<pre>Inputs:
+gene_file     &ltstring&gt   gene body coverage file
+cds_file      &ltstring&gt   CDS coverage file
+min_gene_cov  &ltfloat&gt    minimum gene body coverage
+min_cds_cov   &ltfloat&gt    minimum CDS coverage</pre>
+
+<h4><li> subSample </li></h4>
+<p>"subSample" tool is used to select a subset of samples of a PAV profile.</p>
+
+<pre>Usage: eupanLSF subSample gene_existence_matrix sample_list >output</pre>
+
+<pre>Inputs:
+    gene_existence_matrix      gene presence/absence matrix
+    sample_list                a sample list file</pre>
+
+<h4><li> gFamExist </li></h4>
+<p>"gFamExist" is used to determine gene family presence-absence from gene presence=absence</p>
+
+<pre>Usage: eupanLSF gFamExist <geneExist.txt> <geneFam.info> > geneFamExist.txt</pre>
+
+<pre>Inputs:
+
+    geneExist.txt         gene PAV matrix
+    geneFam.info          gene family annotation</pre>
+
+
+<h4><li> bam2bed </li></h4>
+
+<p>"bam2bed" tool is used to calculate the covered region of the genome.</p>
+
+<pre>Usage: eupanLSF bam2bed [options]  <bam_directory> <output_directory> </pre>
+
+<p>The outputs are covered fragments without overlap in 3-column .bed format. </p>
+
+<p>Necessary input description:</p>
+
+  <pre>  bam_directory           &ltstring&gt    This directory should contain many sub-directories
+                                      named by sample names, such as CX101, B152,etc.
+                                      In each sub-directory, mapping result, a sorted .bam
+                                      file, should exist.
+
+  output_directory        &ltstring&gt    Results will be output to this directory. To avoid 
+                                      overwriting of existing files. We kindly request
+                                      that the output_directory should not exist. It is
+                                      to say, this directory will be created by the 
+                                      script itself.
+
+     -q            &ltstring&gt      The queue name for job submiting. 
+                                 default: default queue</pre>
+
+<h4><li> fastaSta </li></h4>
+<p>"fastaSta" tool is used to check basic statistics of a fasta file.</p>
+
+<pre>Usage: eupanLSF fastaSta <fasta></pre>
+<pre>Inputs:
+      fasta   &ltstring&gt     fasta file  </pre>
+</ol>
+    </section>
+    </div>
+	</div>
+</div>
+	<br>
+	<div class="footer">
+		<hr>
+		<p>Copyright © 2016 The laboratory of computational genomics and metagenomics in Shanghai Jiao Tong University. All Rights Reserved</p>
+	</div>
+</body>
+</html>

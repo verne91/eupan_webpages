@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>EUPAN: Eukaryotic PAN-genome analysis toolkit</title>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+	<script src="js/jquery-2.1.4.min.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+	<div class="container">
+		<img src="images/eupan_logo.svg" alt="logo">
+		<div class="navbar navbar-default">
+			
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a href="index.html" class="navbar-brand">EUPAN</a>
+					<ul class="navbar-nav nav">
+						<li>
+							<a href="index.html">Home</a>
+						</li>
+						<li><a href="installation.html">Installation</a></li>
+						<li><a href="manual.html">Manual</a></li>
+						<li class="active"><a href="sop.html">SOP</a></li>
+						<li><a href="download.html">Download</a></li>
+					</ul>
+				</div>
+			</div>
+			
+		</div>
+	
+		<div class="row">
+		<div class="col-md-2">
+			<ul class="nav nav-tabs nav-stacked">
+				<li><a href="#eupan">EUPAN</a></li>
+				<li><a href="#eupanlsf">EUPAN-LSF</a></li>
+			</ul>
+		</div>
+		<div class="col-md-10">
+			
+
+<p>The purpose of this SOP is to help users to carry out pan-genome studies with EUPAN strategy. The EUPAN SOP is divided into 2 parts:</p>
+<ol>
+<li>eupan SOP for single machine;</li>
+<li>eupanLSF SOP for LSF system.</li>
+</ol>
+<section id="eupan">
+<h2>EUPAN</h2>
+<ol>
+<h3><li> Installation</li></h3>
+   see <a href="installation.html">Installation</a>.
+
+<h3><li> Example data</li></h3>
+   <p>The example data used in this SOP can be downloaded <a href="download.html">here</a>. The example includes sequencing data of 3 individual. For each individual, there are 3 Illumina sequencing runs. Each run contains 500,000 paired-end reads. The read length is 83bp and the quality values follow <i>phred+64</i> rule. Note these are only simple examples to help users understand the input data type and data structure. The real data may be much larger and more complex. </p>
+   <p>After download the data, follow the command:</p>
+               <pre>tar zxvf eupanExample.tar.gz</pre>
+   <p>and you will find two directories within the <i>eupanExample/</i> directory:</p>
+         <pre>data/                 this directory includes the sequencing data with a per-sample-per-directory structure
+ref/ref.fa            example of a reference sequence (chr12 of the rice IRGSP-1.0 genome) 
+ref/ref.gtf           gene annotation of the reference sequences
+unaln.gtf             a blank file</pre>
+<h3><li> Main analysis procedures</li></h3>
+
+      <p>The main analysis procedures include: </p>
+      <ol>
+          <li> the parallel quality control;</li>
+          <li> <i>de novo</i> assembly of individual genomes; </li>
+          <li> construction of pan-genome sequences;</li>
+          <li> gene annotation and gene family annotation; </li>
+          <li> determination of gene (or gene-family) presence-absence variations (PAVs);</li>
+          <li> PAV-based pan-genome analyses.</li>
+	  </ol>
+     <p> We'll introduce how to process your data step by step using EUPAN toolbox and other required tools.</p>
+
+      <h4>3.1 the parallel quality control</h4>
+
+        <p>Requirements
+        <ol>
+           <li> <a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc">Fastqc</a></li> 
+           <li> <a href="http://www.usadellab.org/cms/?page=trimmomatic">Trimmomatic</a></li> 
+		</ol></p>
+        <p>Eupan incorporates <i>Fastqc</i> tool to view the sequencing quality and <i>Trimmomatic</i> tool to filter and trim low-quality reads.</p>
+   <p>A recommended quality control procedure includes: </p>
+        <ol>
+              <li>Preview the overall qualities </li>
+              <li>Trim or filter reads</li>
+              <li>Review the overall qualities</li>
+              <li>Re-trim with selected parameters by repeating step 2 and step 3</li>
+        </ol>
+		<ol>
+        <h5><li> Preview the overall qualities</li></h5>
+
+           <p>We provide the <i>qualitySta</i> tool to overview the overall qualities. "-t" indicates #cores used to run Fastqc parallelly. "-v" indicates pair-end or single-end data. Follow the commands:</p>
+
+              <pre>cd eupanExample
+eupan qualSta -f /path/to/Fastqc -t 4 -v PE data/ preview_quality/</pre>
+
+           <p>Results can be found in the <i>preview_quality/</i> directory:</p>
+
+              <pre>fastqc_output       detailed outputs of each sample
+file.summary        combined quality statistics of all files
+sample.summary      combined quality statistics of all samples (A sample's "PASS" requires "PASS" of all files of the sample)
+file.summary_heatmap.pdf    heatmap of file statistics from file.summary
+sample.summary_heatmap.pdf  heatmap of sample statistics from sample.summary</pre>
+
+           <p>In all output figures, green represents "PASS"; yellow represents "WARNING"; and red represents "FAIL". </p>
+           <p>The summary files together with the plots will provide a landscape of the overall sequencing qualities. We also recommends the users go through some detailed sample results to gain a better understanding of the data and data qualities.</p>
+
+        <h5><li> Trim or filter reads</li></h5>
+
+           <p>We provide the <i>trim</i> tool to trim or filter low-quality reads. After preview the qualities, the users should have a basic understanding of the sequencing data including the quality score version (phred33 or phred64), read length, etc. 
+           To trim the reads, follow the command:</p>
+
+              <pre>eupan trim -p 64 -t 4 data/ trim/ /path/to/Trimmomatic/ </pre>
+
+           <p>To filter low-quality reads, follow the comand:</p>
+
+              <pre>eupan trim -p 64 -t 4 -w 83 -m 83 data/ filter/ /path/to/Trimmomatic/ </pre>
+
+           <p>Results can be found in the output directory (<i>trim/</i> or <i>filter/</i>):</p>
+
+              <pre>data/       directory of the high-quality reads of each sample
+err/        logs and standard errors</pre>
+
+        <h5><li> Review the overall qualities</li></h5>
+
+           <p>After trimming or filtration of reads, the quality should be scanned again. Follow the command: </p>
+
+              <pre>eupan qualSta -f /path/to/Fastqc -t 4 trim/data/ review_quality/</pre>
+
+           <p>Similar to step 1, check the qualities manually and decide if the trimming or filtration step is good enough for subsequent analyses.</p>
+
+        <h5><li> Re-trim with selected parameters by repeating step 2 and step 3</li></h5>
+
+           <p>If the trimming results do not match the user's expection, new parameters should be selected and step 2 and step 3 should be conducted for several times. We highly recommend the users to run step 2 with a set of parameters on a small subset of their data, evaluate their performance and apply the selected parameter on the whole data.</p>
+		</ol>
+       <h4>3.2 <i>de novo</i> assembly of individual genomes </h4>
+
+        <p>Requirements</p>
+        <ol>
+           <li> <a href="http://sourceforge.net/projects/soapdenovo2/">SOAPdenovo2 r240 and GapCloser</a> </li>
+           <li> <a href="http://bioinf.spbau.ru/quast">QUAST v2.3</a> </li>
+		</ol>
+		<br>
+		<ol>
+		
+        <li> <i>de novo</i> assembly of individual genomes </li>
+
+        <p>To gain the comprehensive sequences of all samples, we need first to assemble the individual genomes from short reads. We provide two different strategies in this step: 1) direct assembly and 2) iterative assembly to select the optimal Kmer (recommended). See linearK usage for the detailed strategies for the iterative assembly method. Please note that assembly requires relatively large memory. Pay attention to the memory usage when running the following steps.</p>
+
+        <p>To assemble all samples directly with SOAPdenovo 2 and Gapcloser under a fixed Kmer (e.g. K=23), use command</p>
+
+             <pre>eupan assemble soapdenovo -t 4 -k 23 -g data/ assembly_soap/ /path/to/SOAPdenovo2/</pre>
+
+        <p>The assemblies of individuals can be found in the assembly_soap/ directory. To enable GapCloser, add -g option.</p>
+
+        <p>To assemble all samples directly with iterative use of SOAPdenovo,run with command</p>
+
+             <pre>eupan assemble linearK data assembly_linearK/ /path/to/SOAPdenovo2/</pre>
+
+        <p>The assemblies of individuals can be found in the <code>assembly_linearK/</code> directory.
+        This program utilizes a linear model of sequencing depth to estimate the initialized Kmer. Therefore when applying to user's real data, the estimated genome size (reference genome size is OK) should be provided with <code>-g</code> option. We recommend the user to re-estimate the linear model on a subset of samples and provide it to the program with <code>-r</code> option when processing all samples. According to our experience, this method is about 2.5~3.5 times lower than the direct use of SOAPdenovo2.</p>
+
+        <li> evaluation of the assemblies</li>
+
+        <p>In order to have an overview of the assemblies, we evaluate the major assembly statistics with QUAST software including assembly size, N50, genome fraction (how much of the reference genome is covered), unaligned size, etc. In this process, the contigs from each individual are aligned to the reference genome with nucmer tool within Mummer package, enabling the direct extraction of unaligned sequences in the subsequent analysis. Also the users can extract the unaligned sequences with their own parameters. </p>
+
+        <p>To evaluate the assemblies of the contigs, run with command</p>
+
+             <pre>eupan assemSta -t 4 assembly_soap/data/ assembly_soap_sta/ /path/to/quast/ ref/ref.fa</pre>
+
+        <p>To evaluate the assemblies of the scaffolds, run with command</p>
+
+             <pre>eupan assemSta -t 4 -s assembly_soap/data/ assembly_soap_sta/ /path/to/quast/ ref/ref.fa</pre>
+
+        <p>Note that the assembly step could take a long time. Here for our example data, it would take ~2h with 4 cores(-t 4). The assembly statistics of each sample can be found in the assembly_soap_sta/data/ directory and a summary can be found in <code>assembly_soap_sta/total_statistics.txt</code> file. Note the sequencing data used in this example is of small size inorder to limit the running time, therefore the assembly size is also very small and the statistics is incomplete. It will work well on the user's large data.</p>
+		</ol>
+       <h4>3.3 construction of pan-genome sequences</h4>
+
+        <p>There are several strategies to construct the pan-genome sequences. </p>
+        <ul>
+          <li> Construct the pan-genome sequences based on a reference genome</li>
+          <li> Construct the pan-genome sequences by re-assembling the individual assemblies</li>
+		</ul>
+        <p>If there's a reference genome of the studied organism, we reccommend the first strategy to benifit from the high-quality assembly of the reference together with the high-quality annotation. If there's no such reference, you may use the second strategy. Or still follow the first strategy by building a reference first. To do this, there should be a multi-library sequencing for the reference sample with high-sequencing depth and multiple insertion sizes.</p>
+
+        <p>In this SOP, we only describe how to build the comprehensive pan-genome sequences based on a reference.</p>
+
+        <p>Requirements</p>
+        <ol>
+           <li> <a href="http://mummer.sourceforge.net/">Mummer v3.23</a> </li>
+           <li> <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download">NCBI-Blast</a> </li>
+           <li> <a href="http://www.bioinformatics.org/cd-hit/">CDHIT</a> </li>
+		</ol>
+       <p>Construction of the pan-genome sequences based on a reference genome involves the following steps:</p>
+		<ol>
+       <li> Align contigs to the refernce genome to retrieve unaligned contigs</li>
+       <p> Actually this has been done in the evaluation of assemblies. Users can also carry out this step with Nucmer tool within Mummer package.</p>
+
+       <li> Merge unaligned contigs from individuals to one file</li>
+        <p>To do this, run command</p>
+
+           <pre>eupan getUnalnCtg assembly_linearK/data/ assembly_linearK_sta/data/ unalnCtgs</pre>
+
+        <p>The unaligned contigs can be found in unalnCtgs/total_unaln.fa file</p>
+
+        <p>Check the basic statistics of contigs (base number and contig number) with fastaSta command</p>
+
+            <pre>eupan fastaSta unalnCtgs/total_unaln.fa</pre>
+
+       <li> Get non-redundant novel contigs</li>
+
+        <p>To remove redundant contigs, run command</p>
+
+           <pre>eupan rmRedundant cdhitCluster unalnCtgs/total_unaln.fa unalnCtgs/nrUnaln /path/to/cd-hit/
+eupan fastaSta unalnCtgs/nrUnaln/non-redundant.fa</pre>
+
+        <p>Non-redundant contigs (identity&lt0.9) and the clustering information can be found in <code>unalnCtgs/nrUnaln/</code> directory.</p>
+
+       <li> Remove contaminates</li>
+
+        <p>This is a very important step in such pan-genome analysis involving large number of individuals. The non-redundant contigs are the enrichment of sequences missed in the reference, and are also the enrichment of contaminates. Users should remove contaminates according to their studied species. For our rice study, we removed contaminates from bacteria, virus, archaea and even animals. Actually, we remove all contigs whose best alignment to nt database is not green plants. There is no gold standard in this step, therefore we provide no tool for this part. Users should remove contaminates by themselves. </p>
+
+       <li> Check the non-redundant novel sequences at a given identity </li>
+
+        <p>The non-redundant novel sequences we obtained above is at identity of 0.9. Sometimes we want to know the size under a much lower identity (say 0.5).Here we provide a blast-based method to cluster sequences and remove the non-redundant contigs. To do this, run command</p>
+
+           <pre>eupan rmRedundant blastCluster -c 0.5 unalnCtgs/total_unaln.fa unalnCtgs/nrUnalnBlast/ /path/to/ncbi-blast/bin/</pre>
+
+        <p>The outputs are similar to those of "eupan rmRedundant cdhitCluster" command. The results can be found in unalnCtgs/nrUnalnBlast/ directory.</p>
+
+       <li> Merge reference sequences and non-redundant unalined sequences</li>
+
+        <p>We recommend to use non-redundant sequences derived from step 4) instead of sequences derived at much lower identity for the subsequent analyses. We will map raw reads to the comprehensive sequences to determine gene presence-absence. Using low-identity contigs will result in loss of mapping of reads and further result in miss annotation of a gene existence or a gene family existence.
+        To merge the reference and non-redundant contigs, simply run  </p>
+
+           <pre>mkdir pan
+cat ref/ref.fa unalnCtgs/nrUnaln/non-redundant.fa >pan/pan.fa</pre>
+		</ol>
+       <h4>3.4 Annotation of the pan-genome sequences</h4>
+
+        <p>Annotation of the pan-genome sequences can be divided into two parts:</p>
+        <ol>
+           <li> gene annotation of the pan-genome sequences</li>
+           <li> gene family annotation of the pan-genome sequences</li>
+		</ol>
+		<br>
+		<ol>
+       <li> gene annotation of the pan-genome sequences</li>
+        <p>Gene annotation of the pan-genome sequences can also be divided into 2 parts: i)gene annotation of the reference genome; and ii)gene prediction of the novel sequences.</p>
+
+          <h5>i) gene annotation of the reference genome</h5>
+
+          <p>As described above, one of the advantages to build pan-genome sequences is that we can use the high-quality annotation of the reference genome. The annotation of the reference genome is in ref/ref.gtf file. To be consistent with the annotation of unaligned sequences and also to be convenient for subsequent analyses, the annotation should be re-arranged following per-transcript-per-gene pattern. For genes with multiple transcripts, only the one with the longest coding sequences are selected as represents. To do this run command</p>
+
+             <pre>eupan pTpG ref/ref.gtf ref/ref-ptpg.gtf</pre>
+
+          <h5>ii) gene prediction of the novel sequences</h5>
+
+          <p>Gene prediction of eukaryotes itself is a challenging and complex task. And the selection of gene prediction tools or pipelines depends on the target organism. In rice study, we used MAKER-P pipeline to integrate ab initio predictions, transcript evidence and protein homologies. For animals or other organisms, you may want MAKER or PASA. That's why we provide no tools for this step. Users need to carry out the gene prediction step carefully.</p>
+
+          <p>The reccomended pipelines are:</p>
+			<ul>
+         <li> <a href="http://pasapipeline.github.io/">PASA2</a></li>
+          <li><a href="http://weatherby.genetics.utah.edu/MAKER/wiki/index.php/MAKER_Tutorial">MAKER</a></li>
+      </ul>
+
+          <p>Here we use a blank file (<code>./unaln.gtf</code>) to subtitute the gene annotation of unaligned sequences.</p>
+       
+          <p>After these 2 steps, we should combine the annotation of the reference and the annotation of unaligned sequences. Simply run</p>
+          
+             <pre>cat ref/ref.gtf unaln.gtf >pan/pan.gtf</pre>
+
+       <li> gene family annotation of the pan-genome sequences</li>
+
+          <p>Pan-genome analyses are often carried out on gene families. Here we recommend cluster genes into gene families with <a href="http://sourceforge.net/projects/orthomcl/">OrthoMCL</a>. OrthoMCL requires specific configuration, therefore we didn't integrate it into the toolbox. Users need to carry out this step by themselves.</p>
+		</ol>
+       <h4>3.5 determination of gene (or gene-family) presence-absence variations (PAVs)</h4>
+
+         <p>Requirements</p>
+         <ol>
+         <li> bwa or bowtie2</li>
+             <a href="http://bio-bwa.sourceforge.net/">bwa v0.7.10</a><br>
+             <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">bowtie2 v2.24</a>
+         <li> <a href="http://samtools.sourceforge.net/">samtools v1.3</a> </li>
+         <li> <a href="http://qualimap.bioinfo.cipf.es/">qualimap v0.8</a> </li>
+         <li> <a href="https://github.com/statgen/bamUtil">bamUtil v1.0.12</a> </li>
+		</ol>
+         <p>We utilize a "map-to-pan" strategy to determine gene presence-absence and gene family presence-absence. Therefore we need to map the raw reads to the comprehensive sequences first. This can be done using "bwa mem" (recommended) or bowtie2.</p>
+         <p>To use bwa mem, run the following commands</p>
+
+             <pre>cd pan/
+/path/to/bwa/bwa index -a bwtsw pan.fa
+cd ..
+eupan alignRead -f bwa -t 4 trim/data/ map2pan/ /path/to/bwa/ pan/pan.fa</pre>
+
+         <p>To use bowtie2, run the following commands</p>
+
+             <pre>cd pan/
+/path/to/bowtie2/bowtie2-build pan.fa pan
+cd ..
+eupan alignRead -f bowtie2 -t 4 trim/data/ map2pan/ /path/to/bowtie2/ pan/pan</pre>
+
+         <p>The results can be found in <code>map2pan/</code> directory.</p>
+
+         <p>Next, the <code>.sam</code> output should be converted to <code>.bam</code> and then sorted, merged and indexed. The <code>.bam</code> and <code>.bai</code> files can be used to view alignments in genomebrowsers. And <code>.sam</code> files can be further removed to save space. To do this, run command</p>
+
+             <pre>eupan sam2bam -t 4 map2pan/data/ panBam/ /path/to/samtools-1.3/
+rm -r map2pan/data/</pre>
+
+         <p>The results can be found in <code>panBam/</code> directory. There are two files for each sample: <code>.bam</code> and <code>.bai</code>. We also provide a bam2bed tool to calculate the covered region of the genome. The output non-overlapped fragments are organized in 3-column <code>.bed</code> files which can be utilized for visualization in pan-genome browser and also matained for further use. See our <a href="http://cgm.sjtu.edu.cn/3kricedb/">pan-genome browser of rice</a> for example. </p>
+ 
+             <pre>eupan bam2bed panBam/data/ covRegion/</pre>
+
+         <p>The <code>.bed</code> files can be found in <code>covRegion/data/</code> directory. </p>
+
+         <p>What's more, the users can also use this tool to align reads to the reference genome alone and check the statistics. We show how to do this with bwa as an example. Similar as mentioned above, do the alignment with commands</p>
+
+             <pre>cd ref/
+/path/to/bwa/bwa index -a bwtsw ref.fa
+cd ..
+eupan alignRead -f bwa -t 4 trim/data/ map2ref/ /path/to/bwa/ ref/ref.fa</pre>
+
+         <p>Convert <code>.sam</code> to <code>.bam</code> and remove <code>.sam</code> with commands</p>
+
+             <pre>eupan sam2bam -t 4 map2ref/data/ refBam/ /path/to/samtools-1.3/
+rm -r map2ref/data/</pre>
+
+         <p>Check the basic statistics from <code>.bam</code> files with command</p>
+
+             <pre>mkdir refBamSta
+eupan bamSta basic refBam/data/ refBamSta/basic/ /path/to/bamUtil/</pre>
+
+         <p>The basic statistics can be found in refBamSta/basic/summary.txt</p>
+ 
+         <p>Check how much of the genome can be covered from <code>.bam</code> files with command</p>
+
+             <pre>eupan bamSta cov refBam/data/ refBamSta/cov/ /path/to/qualimap/</pre>
+
+         <p>The coverages can be found in <code>refBamSta/cov/summary.txt</code></p>
+ 
+         <p>After mapping the reads to the  pan-genome sequence, we can calculate the gene body coverage and CDS coverage of each gene. Run command</p>
+
+             <pre>eupan geneCov -t 4 panBam/data/ geneCov/ pan/pan.fa pan/pan.gtf</pre>
+
+         <p>The gene body coverages can be found in <code>geneCov/summary_gene.cov</code> and the cds coverages can be found in <code>geneCov/summary_cds.cov</code>.</p>
+
+         <p>Next we can determine  gene presence-absence considering genebody coverages and cds coverages. If we define genes with gene body coverage >0.8 and cds coverage >0.95 ere considered as  present in the genome, gene PAV profile can be calculated by</p>
+
+             <pre>mkdir geneExist
+eupan geneExist geneCov/summary_gene.cov geneCov/summary_cds.cov 0.8 0.95 >geneExist/gene.exist</pre>
+
+         <p>The output file are organized as </p>
+
+               <pre> gene    sampleA    sampleB   sampleC     ...
+geneA      1          1        1         ...
+geneB      1          0        1         ...
+geneC      1          1        1         ...
+geneD      1          0        1         ...
+...</pre>
+         <p>where 1 represent presents and 0 represents absence.</p>
+
+         <p>Obviously the coverages are influenced by the sequencing depth. Insufficient sequencing will result in mis-annotation of presented genes. The example sequencing files are from rices and has ovely sequencing deth below 1x. We recommend the users to add a sample selection step before the pan-genome analyses. The users can select a subset of individuals based on sequencing depth and mapping depth (based on reference) for the subsequent analyses. In our rice study, we required sequencing depths higher than 20 and mapping depth higher than 15.</p>
+         <p>Users can put the selected sample name in a list as </p>
+			
+         <pre>sampleA
+sampleB
+sampleC
+...</pre>
+
+         <p>With the subSample command, users can select a subset of samples from the PAV profile</p>
+
+             <pre>eupan subSample geneExist/gene.exist list >geneExist/SampleFilteredGene.exist</pre>
+
+         <p>The new PAV profile for  the selected sample can be found in <code>geneExist/SampleFilteredGene.exist</code> file.</p>
+
+         <p>Next we can further convert gene PAV profile into gene family PASV profile with a gene family annotation. An example of gene family annotation file can be found here. Gene family PAVs can be derived from gene PAVs with gFamExist command</p>
+
+             <pre>eupan gFamExist geneExist/gene.exist geneFam.txt >geneFam.exist</pre>
+
+         <p>The <code>geneFam.exist</code> file is organized as the same pattern of gene PAV profile. Therefore the subsequent pan-genome analyses can be carried out for both gene PAV profile and gene family PAV profile.</p>
+         <p>Next we will do random sampling for pangenome simulation. For each iteration of simulation, we will randomly sample one by one, and calculate the core genome size and pan genome size.</p>
+         <pre> eupan sim -n 100 geneExist/gene.exist simulation_pav</pre>
+         <p>Here, -n indicates the number of random simulations (default=100). The result can be found in <code>simulation_pav/sim_out.txt_PAV_plot.pdf</code></p>
+
+
+
+         <h4>3.6 PAV-based pan-genome analyses</h4>
+		<ol>
+         <p>Traditional pan-genome analyses can be carried out based on the PAV profiles:</p>
+         
+             <li> Classification of core genes or distributed genes</li>
+             <li> Study of the functions of core genes and distributed genes</li>
+             <li> Simulation of the pan-genome size and the core-genome size</li>
+             <li> Phylogenetic analysis to reveal relationship of the samples</li>
+			<br>
+         <p>In addition, classifications of samples can be derived from the phylogenetic analysis if there's no such information before you do this analysis. Based on the grouping information of samples, you can carry out many comparisons among groups:</p>
+
+             <li> Comparison of genome size (gene number and gene family number)</li>
+             <li> Comparison of sizes of pan-genomes and core-genomes among the groups (or subspecies)</li>
+             <li> Study of group-dominant and group-specific genes</li>
+			<br>
+         <p>What's more, by integrating other knowledge, many customized analyses can be carried out. We give some examples here.</p>
+
+             <li> Comparison of gene ages between core and distributed genes.</li>
+             <li> Comparison mutation rates between core and distributed genes.</li>
+             <li>Integrating phenotypes to carry out GWAS based on gene PAVs</li>
+             <p>.......</p>
+             <p>.......</p>
+      	</ol>
+      <li> Bugs or Suggestions</li>
+
+         <p>We recommend to use tools with the exact version we mentioned. If you got errors, please first read the error files and try the recommended version. There are logs and error files for each step. Bugs should be sent to <a href="mailto:doodlehzq@sjtu.edu.cn">HZQ</a>. 
+         Pan-genome analysis using "map-to-pan" strategy is somewhat complex. We welcome the user's suggestion and discussion on any points involved in the pipeline.</p>
+    
+</ol>
+			</section>
+			<section id="eupanlsf">
+<h2>EUPAN-LSF</h2>
+<ol>
+<h3><li> Installation</li></h3>
+   see <a href="installation.html">Installation</a>
+
+<h3><li> Example data</li></h3>
+   <p>The example data used in this SOP can be downloaded here. The length of sequencing reads is 83bp and the quality values follow phred+64. Note these are only simple examples helping users understand the data type and data structure. The real data may be much larger. 
+   After download the data, follow the commands:</p>
+               <pre>tar zxvf eupanExample.tar.gz</pre>
+   <p>and you will find two directories within the eupanExample directory:</p>
+         <pre>data/                 this directory includes the sequencing data with a per-sample-per-directory structure;
+ref/ref.fa            example of a reference sequence (chr12 of the rice IRGSP-1.0 genome) 
+ref/ref.gtf           gene annotation of the reference sequences
+unaln.gtf             a blank file</pre>
+<h3><li> Main analysis procedures</li></h3>
+
+      <p>The main analysis procedures include: </p>
+      <ol>
+          <li> the parallel quality control;</li>
+          <li> <i>de novo</i> assembly of individual genomes; </li>
+          <li> construction of pan-genome sequences;</li>
+          <li> gene annotation and gene family annotation; </li>
+          <li> determination of gene (or gene-family) presence-absence variations (PAVs);</li>
+          <li> PAV-based pan-genome analyses.</li>
+    </ol>
+     <p> We'll introduce how to process your data step by step using EUPAN toolbox and other required tools.</p>
+
+      <h4>3.1 the parallel quality control</h4>
+
+        <p>Requirements</p>
+        <ol>
+           <li> <a href="http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.2.zip">Fastqc</a></li> 
+           <li> <a href="http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.32.zip">Trimmomatic</a></li> 
+    </ol>
+        <p>eupan incorporates</p>
+    <ol>
+         <li> the Fastqc tool to view the sequencing quality </li>
+         <li> the trimmomatic tool to filter and trim low-quality reads.</li>
+     </ol>
+   <p>A recommended quality control procedure includes: </p>
+        <ol>
+              <li>Preview the overall qualities </li>
+              <li>Trim or filter reads</li>
+              <li>Review the overall qualities</li>
+              <li>Re-trim with selected parameters by repeating step ii) and step iii)</li>
+        </ol>
+    <ol>
+        <h5><li> Preview the overall qualities</li></h5>
+
+           <p>We provide the qualitySta tool to overview the overall qualities. </p>
+
+              <pre>cd eupanExample
+eupanLSF qualSta -f /path/to/Fastqc -t 4 data/ preview_quality/
+eupanLSF mergeQualSta preview_quality/</pre>
+
+           <p>Results can be found in the preview_quality directory:</p>
+
+              <pre>fastqc_output       detailed outputs of each sample
+file.summary        combined quality statistics of all files
+sample.summary      combined quality statistics of all samples (A sample's "PASS" requires "PASS" of all files of the sample)
+file_barplot.png    barplot of file statistics from file.summary
+file_heatmap.png    heatmap of file statistics from file.summary
+sample_barplot.png  barplot of sample statistics from sample.summary
+sample_heatmap.png  heatmap of sample statistics from sample.summary</pre>
+
+           <p>In all output figures, green represents "PASS"; yellow represents "WARNING"; and red represents "FAIL". </p>
+           <p>The summary files together with the plots will provide a landscape of the overall sequencing qualities. We also recommends the users go through some detailed sample results to gain a better understanding of the data.</p>
+
+        <h5><li> Trim or filter reads</li></h5>
+
+           <p>We provide the trim tool to trim or filter low-quality reads. After preview the qualities, the users should have a basic understanding of the sequencing data including the quality score version (phred33 or phred64), read length, etc. 
+           To trim the reads, follow the command</p>
+
+              <pre>eupanLSF trim -p 64 -t 4 data/ trim/ /path/to/Trimmomatic/ </pre>
+
+           <p>To filter low-quality reads, follow the comand</p>
+
+              <pre>eupanLSF trim -p 64 -t 4 -w 83 -m 83 data/ filter/ /path/to/Trimmomatic/ </pre>
+
+           <p>Results can be found in the output directory (trim/ or filter/):</p>
+
+              <pre>data/       directory of the high-quality reads of each sample
+job/        job scripts, standard outputs and standard errors</pre>
+
+        <h5><li> Review the overall qualities</li></h5>
+
+           <p>After trimming or filtration of reads, the quality should be scanned again.</p>
+
+              <pre>eupanLSF qualSta -f /path/to/Fastqc -t 4 trim/data/ review_quality/
+eupanLSF mergeQualSta review_quality/</pre>
+
+           <p>Similar to step i), check the qualities manually and decide if the trimming or filtration step is good enough for subsequent analyses.</p>
+
+        <h5><li> Re-trim with selected parameters by repeating step ii) and step iii)</li></h5>
+
+           <p>If the trimming results do not match the user's expection, new parameters should be selected and ii) and iii) steps should be conducted for several times. We highly recommend the users to run step ii) with a set of parameters on a small subset of their data, evaluate their performance and apply the selected parameter on all the data.</p>
+    </ol>
+       <h4>3.2 <i>de novo</i> assembly of individual genomes </h4>
+
+        <p>Requirements</p>
+        <ol>
+           <li> <a href="http://sourceforge.net/projects/soapdenovo2/">SOAPdenovo2 r240 and GapCloser</a> </li>
+           <li> <a href="http://bioinf.spbau.ru/quast">QUAST v2.3</a> </li>
+    </ol>
+    <br>
+    <ol>
+    
+        <li> <i>de novo</i> assembly of individual genomes </li>
+
+        <p>To gain the comprehensive sequences of all samples, we need first to assemble the individual genomes from short reads. We provide 2 different strategies in this step: 1)direct assembly with SOAPdenovo2 and 2)iterative assembly based on SOAPdenovo2 (recommended). See linearK usage for the detailed strategies for the iterative assembly method. Please note that assembly requires relatively large memory. Pay attention to the memory usage when running the following steps.</p>
+
+        <p>To assemble all samples directly with SOAPdenovo 2 and Gapcloser under a fixed Kmer (e.g. K=23), use command</p>
+
+             <pre>eupanLSF assemble soapdenovo -t 4 -k 23 -g data/ assembly_soap/ /path/to/SOAPdenovo2/</pre>
+
+        <p>The assemblies of individuals can be found in the assembly_soap/ directory. To enable GapCloser, add -g option.</p>
+
+        <p>To assemble all samples directly with iterative use of SOAPdenovo,run with command</p>
+
+             <pre>eupanLSF assemble linearK data assembly_linearK/ /path/to/SOAPdenovo2/</pre>
+
+        <p>The assemblies of individuals can be found in the <code>assembly_linearK/</code> directory.
+        This program utilizes a linear model of sequencing depth to estimate the initialized Kmer. Therefore when applying to user's real data, the estimated genome size (reference genome size is OK) should be provided with <code>-g</code> option. We recommend the user to re-estimate the linear model on a subset of samples and provide it to the program with <code>-r</code> option when processing all samples. According to our experience, this method is about 2.5~3.5 times lower than the direct use of SOAPdenovo2.</p>
+
+        <li> evaluation of the assemblies</li>
+
+        <p>In order to have an overview of the assemblies, we evaluate the major assembly statistics with QUAST software including assembly size, N50, genome fraction (how much of the reference genome is covered), unaligned size, etc. In this process, the contigs from each individual are aligned to the reference genome with nucmer tool within Mummer package, enabling the direct extraction of unaligned sequences in the subsequent analysis. Also the users can extract the unaligned sequences with their own parameters. </p>
+
+        <p>To evaluate the assemblies of the contigs, run with command</p>
+
+             <pre>eupanLSF assemSta -t 4 assembly_soap/data/ assembly_soap_sta/ /path/to/quast/ ref/ref.fa
+eupanLSF mergeAssemSta assembly_soap_sta/data/ >assembly_soap_sta/total_statistics.txt</pre>
+
+        <p>To evaluate the assemblies of the scaffolds, run with command</p>
+
+             <pre>eupanLSF assemSta -t 4 -s assembly_soap/data/ assembly_soap_sta/ /path/to/quast/ ref/ref.fa
+eupanLSF mergeAssemSta assembly_soap_sta/data/ >assembly_soap_sta/total_statistics.txt</pre>
+
+        <p>The assembly statistics of each sample can be found in the assembly_soap_sta/data/ directory and a summary can be found in <code>assembly_soap_sta/total_statistics.txt</code> file. Note the sequencing data used in this example is of small size inorder to limit the running time, therefore the assembly size is also very small and the statistics is incomplete. It will work well on the user's large data.</p>
+    </ol>
+       <h4>3.3 construction of pan-genome sequences</h4>
+
+        <p>There are several strategies to construct the pan-genome sequences. </p>
+        <ul>
+          <li> Construct the pan-genome sequences based on a reference genome</li>
+          <li> Construct the pan-genome sequences by re-assembling the individual assemblies</li>
+    </ul>
+        <p>If there's a reference genome of the studied organism, we reccommend the first strategy to benifit from the high-quality assembly of the reference together with the high-quality annotation. If there's no such reference, you may use the second strategy. Or still follow the first strategy by building a reference first. To do this, there should be a multi-library sequencing for the reference sample with high-sequencing depth and multiple insertion sizes.</p>
+
+        <p>In this SOP, we only describe how to build the comprehensive pan-genome sequences based on a reference.</p>
+
+        <p>Requirements</p>
+        <ol>
+           <li> <a href="http://mummer.sourceforge.net/">Mummer v3.23</a> </li>
+           <li> <a href="http://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs&DOC_TYPE=Download">NCBI-Blast</a> </li>
+           <li> <a href="http://www.bioinformatics.org/cd-hit/">CDHIT</a> </li>
+    </ol>
+       <p>Construction of the pan-genome sequences based on a reference genome involves the following steps:</p>
+    <ol>
+       <li> Align contigs to the refernce genome to retrieve unaligned contigs</li>
+       <p> Actually this has been done in the evaluation of assemblies. Users can also carry out this step with Nucmer tool within Mummer package.</p>
+
+       <li> Merge unaligned contigs from individuals to one file</li>
+        <p>To do this, run command</p>
+
+           <pre>eupanLSF getUnalnCtg assembly_soap/data/ assembly_soap_sta/data/ unalnCtgs
+eupanLSF mergeUnalnCtg unalnCtgs/data/ unalnCtgs/total_unaln.fa</pre>
+
+        <p>The unaligned contigs can be found in unalnCtgs/total_unaln.fa file</p>
+
+        <p>Check the basic statistics of contigs (base number and contig number) with fastaSta command</p>
+
+            <pre>eupan fastaSta unalnCtgs/total_unaln.fa</pre>
+
+       <li> Get non-redundant novel contigs</li>
+
+        <p>To remove redundant contigs, run command</p>
+
+           <pre>eupanLSF rmRedundant cdhitCluster unalnCtgs/total_unaln.fa unalnCtgs/nrUnaln /path/to/cd-hit/
+eupanLSF fastaSta unalnCtgs/nrUnaln/non-redundant.fa</pre>
+
+        <p>Non-redundant contigs (identity&lt0.9) and the clustering information can be found in <code>unalnCtgs/nrUnaln/</code> directory.</p>
+
+       <li> Remove contaminates</li>
+
+        <p>This is a very important step in such pan-genome analysis involving large number of individuals. The non-redundant contigs are the enrichment of sequences missed in the reference, and are also the enrichment of contaminates. Users should remove contaminates according to their studied species. For our rice study, we removed contaminates from bacteria, virus, archaea and even animals. Actually, we remove all contigs whose best alignment to nt database is not green plants. There is no gold standard in this step, therefore we provide no tool for this part. Users should remove contaminates by themselves. </p>
+
+       <li> Check the non-redundant novel sequences at a given identity </li>
+
+        <p>The non-redundant novel sequences we obtained above is at identity of 0.9. Sometimes we want to know the size under a much lower identity (say 0.5).Here we provide a blast-based method to cluster sequences and remove the non-redundant contigs. To do this, run command</p>
+
+           <pre>eupanLSF rmRedundant blastCluster -c 0.5 unalnCtgs/total_unaln.fa unalnCtgs/nrUnalnBlast/ /path/to/ncbi-blast/bin/</pre>
+
+        <p>The outputs are similar to those of "eupan rmRedundant cdhitCluster" command. The results can be found in unalnCtgs/nrUnalnBlast/ directory.</p>
+
+       <li> Merge reference sequences and non-redundant unalined sequences</li>
+
+        <p>We recommend to use non-redundant sequences derived from step 4) instead of sequences derived at much lower identity for the subsequent analyses. We will map raw reads to the comprehensive sequences to determine gene presence-absence. Using low-identity contigs will result in loss of mapping of reads and further result in miss annotation of a gene existence or a gene family existence.
+        To merge the reference and non-redundant contigs, simply run  </p>
+
+           <pre>mkdir pan
+cat ref/ref.fa unalnCtgs/nrUnaln/non-redundant.fa >pan/pan.fa</pre>
+    </ol>
+       <h4>3.4 Annotation of the pan-genome sequences</h4>
+
+        <p>Annotation of the pan-genome sequences can be divided into two parts:</p>
+        <ol>
+           <li> gene annotation of the pan-genome sequences</li>
+           <li> gene family annotation of the pan-genome sequences</li>
+    </ol>
+    <br>
+    <ol>
+       <li> gene annotation of the pan-genome sequences</li>
+        <p>Gene annotation of the pan-genome sequences can also be divided into 2 parts: i)gene annotation of the reference genome; and ii)gene prediction of the novel sequences.</p>
+
+          <h5>i) gene annotation of the reference genome</h5>
+
+          <p>As described above, one of the advantages to build pan-genome sequences is that we can use the high-quality annotation of the reference genome. The annotation of the reference egenome is in ref/ref.gtf file. To be consistent with the annotation of unaligned sequences and also to be convenient for subsequent analyses, the annotation should be re-arranged following per-transcript-per-gene pattern. For genes with multiple transcripts, only the one with the longest coding sequences are selected as represents. To do this run command</p>
+
+             <pre>eupanLSF pTpG ref/ref.gtf ref/ref-ptpg.gtf</pre>
+
+          <h5>ii) gene prediction of the novel sequences</h5>
+
+          <p>Gene prediction of eukaryotes itself is a challenging and complex task. And the selection of gene prediction tools or pipelines depends on the target organism. In rice study, we used MAKER-P pipeline to integrate ab initio predictions, transcript evidence and protein homologies. For animals or other organisms, you may want MAKER or PASA. That's why we provide no tools for this step. Users need to carry out the gene prediction step carefully.</p>
+
+          <p>The reccomended pipelines are:</p>
+      <ul>
+         <li> <a href="http://pasapipeline.github.io/">PASA2</a></li>
+          <li><a href="http://weatherby.genetics.utah.edu/MAKER/wiki/index.php/MAKER_Tutorial">MAKER</a></li>
+      </ul>
+
+          <p>Here we use a blank file (<code>unaln.gtf</code>) to subtitute the gene annotation of unaligned sequences.</p>
+       
+          <p>After these 2 steps, we should combine the annotation of the reference and the annotation of unaligned sequences. Simply run</p>
+          
+             <pre>cat ref/ref.gtf unaln.gtf >pan/pan.gtf</pre>
+
+       <li> gene family annotation of the pan-genome sequences</li>
+
+          <p>Pan-genome analyses are often carried out on gene families. Here we recommend cluster genes into gene families with <a href="http://sourceforge.net/projects/orthomcl/">OrthoMCL</a>. OrthoMCL requires specific configuration, therefore we didn't integrate it into the toolbox. Users need to carry out this step by themselves.</p>
+    </ol>
+       <h4>3.5 determination of gene (or gene-family) presence-absence variations (PAVs)</h4>
+
+         <p>Requirements</p>
+         <ol>
+         <li> bwa or bowtie2</li>
+             <a href="http://bio-bwa.sourceforge.net/">bwa v0.7.10</a><br>
+             <a href="http://bowtie-bio.sourceforge.net/bowtie2/index.shtml">bowtie2 v2.24</a>
+         <li> <a href="http://samtools.sourceforge.net/">samtools v1.3</a> </li>
+         <li> <a href="http://qualimap.bioinfo.cipf.es/">qualimap v0.8</a> </li>
+         <li> <a href="https://github.com/statgen/bamUtil">bamUtil v1.0.12</a> </li>
+    </ol>
+         <p>We utilize a "map-to-pan" strategy to determine gene presence-absence and gene family presence-absence. Therefore we need to map the raw reads to the comprehensive sequences first. This can be done using "bwa mem" (recommended) or bowtie2.</p>
+         <p>To use bwa mem, run the following commands</p>
+
+             <pre>cd pan/
+/path/to/bwa/bwa index -a bwtsw pan.fa
+cd ..
+eupanLSF alignRead -f bwa -t 4 trim/data/ map2pan/ /path/to/bwa/ pan/pan.fa</pre>
+
+         <p>To use bowtie2, run the following commands</p>
+
+             <pre>cd pan/
+/path/to/bowtie2/bowtie2-build pan.fa pan
+cd ..
+eupanLSF alignRead -f bowtie2 -t 4 trim/data/ map2pan/ /path/to/bowtie2/ pan/pan</pre>
+
+         <p>The results can be found in <code>map2pan/</code> directory.</p>
+
+         <p>Next, the <code>.sam</code> output should be converted to <code>.bam</code> and then sorted, merged and indexed. The <code>.bam</code> and <code>.bai</code> files can be used to view alignments in genomebrowsers. And <code>.sam</code> files can be further removed to save space. To do this, run command</p>
+
+             <pre>eupanLSF sam2bam -t 4 map2pan/data/ panBam/ /path/to/samtools-1.3/
+rm -r map2pan/data/</pre>
+
+         <p>The results can be found in <code>panBam/</code> directory. There are two files for each sample: <code>.bam</code> and <code>.bai</code>. We also provide a bam2bed tool to calculate the covered region of the genome. The output non-overlapped fragments are organized in 3-column <code>.bed</code> files which can be utilized for visualization in pan-genome browser and also matained for further use. See our <a href="http://cgm.sjtu.edu.cn/3kricedb/">pan-genome browser of rice</a> for example. </p>
+ 
+             <pre>eupanLSF bam2bed panBam/data/ covRegion/</pre>
+
+         <p>The <code>.bed</code> files can be found in <code>covRegion/data/</code> directory. </p>
+
+         <p>What's more, the users can also use this tool to align reads to the reference genome alone and check the statistics. We show how to do this with bwa as an example. Similar as mentioned above, do the alignment with commands</p>
+
+             <pre>cd ref/
+/path/to/bwa/bwa index -a bwtsw ref.fa
+cd ..
+eupanLSF alignRead -f bwa -t 4 trim/data/ map2ref/ /path/to/bwa/ ref/ref.fa</pre>
+
+         <p>Convert <code>.sam</code> to <code>.bam</code> and remove <code>.sam</code> with commands</p>
+
+             <pre>eupanLSF sam2bam -t 4 map2ref/data/ refBam/ /path/to/samtools-1.3/
+rm -r map2ref/data/</pre>
+
+         <p>Check the basic statistics from <code>.bam</code> files with command</p>
+
+             <pre>mkdir refBamSta
+eupanLSF bamSta basic refBam/data/ refBamSta/basic/ /path/to/bamUtil/
+eupanLSF bamSta mergeBasicSta refBamSta/basic/data/ >refBamSta/basic/summary.txt</pre>
+
+         <p>The basic statistics can be found in refBamSta/basic/summary.txt</p>
+ 
+         <p>Check how much of the genome can be covered from <code>.bam</code> files with command</p>
+
+             <pre>eupanLSF bamSta cov refBam/data/ refBamSta/cov/ /path/to/qualimap/
+eupanLSF bamSta mergeCovSta refBamSta/cov/data/ >refBamSta/cov/summary.txt</pre>
+
+         <p>The coverages can be found in <code>refBamSta/cov/summary.txt</code></p>
+ 
+         <p>After mapping the reads to the  pan-genome sequence, we can calculate the gene body coverage and CDS coverage of each gene. Run command</p>
+
+             <pre>eupanLSF geneCov panBam/data/ geneCov/ pan/pan.fa pan/pan.gtf
+eupanLSF mergeGeneCov geneCov/summary_ geneCov/data/</pre>
+
+         <p>The gene body coverages can be found in <code>geneCov/summary_gene.cov</code> and the cds coverages can be found in <code>geneCov/summary_cds.cov</code>.</p>
+
+         <p>Next we can determine  gene presence-absence considering genebody coverages and cds coverages. If we define genes with gene body coverage >0.8 and cds coverage >0.95 ere considered as  present in the genome, gene PAV profile can be calculated by</p>
+
+             <pre>mkdir geneExist
+eupanLSF geneExist geneCov/summary_gene.cov geneCov/summary_cds.cov 0.8 0.95 >geneExist/gene.exist</pre>
+
+         <p>The output file are organized as </p>
+
+               <pre> gene    sampleA    sampleB   sampleC     ...
+geneA      1          1        1         ...
+geneB      1          0        1         ...
+geneC      1          1        1         ...
+geneD      1          0        1         ...
+...</pre>
+         <p>where 1 represent presents and 0 represents absence.</p>
+
+         <p>Obviously the coverages are influenced by the sequencing depth. Insufficient sequencing will result in mis-annotation of presented genes. The example sequencing files are from rices and has ovely sequencing deth below 1x. We recommend the users to add a sample selection step before the pan-genome analyses. The users can select a subset of individuals based on sequencing depth and mapping depth (based on reference) for the subsequent analyses. In our rice study, we required sequencing depths higher than 20 and mapping depth higher than 15.</p>
+         <p>Users can put the selected sample name in a list as </p>
+      
+         <pre>sampleA
+sampleB
+sampleC
+...</pre>
+
+         <p>With the subSample command, users can select a subset of samples from the PAV profile</p>
+
+             <pre>eupanLSF subSample geneExist/gene.exist list >geneExist/SampleFilteredGene.exist</pre>
+
+         <p>The new PAV profile for  the selected sample can be found in <code>geneExist/SampleFilteredGene.exist</code> file.</p>
+
+         <p>Next we can further convert gene PAV profile into gene family PASV profile with a gene family annotation. An example of gene family annotation file can be found here. Gene family PAVs can be derived from gene PAVs with gFamExist command</p>
+
+             <pre>eupanLSF gFamExist geneExist/gene.exist geneFam.txt >geneFam.exist</pre>
+
+         <p>The <code>geneFam.exist</code> file is organized as the same pattern of gene PAV profile. Therefore the subsequent pan-genome analyses can be carried out for both gene PAV profile and gene family PAV profile.</p>
+
+<p>Next we will do random sampling for pangenome simulation. For each iteration of simulation, we will randomly sample one by one, and calculat    e the core genome size and pan genome size.</p>
+<pre> eupanLSF sim -n 100 geneExist/gene.exist simulation_pav</pre>
+<p>Here, -n indicates the number of random simulations (default=100). The result can be found in <code>simulation_pav/sim_out.txt_PAV_plot.pdf </code></p>
+
+
+         <h4>3.6 PAV-based pan-genome analyses</h4>
+    <ol>
+         <p>Traditional pan-genome analyses can be carried out based on the PAV profiles:</p>
+         
+             <li> Classification of core genes or distributed genes</li>
+             <li> Study of the functions of core genes and distributed genes</li>
+             <li> Simulation of the pan-genome size and the core-genome size</li>
+             <li> Phylogenetic analysis to reveal relationship of the samples</li>
+      <br>
+         <p>In addition, classifications of samples can be derived from the phylogenetic analysis if there's no such information before you do this analysis. Based on the grouping information of samples, you can carry out many comparisons among groups:</p>
+
+             <li> Comparison of genome size (gene number and gene family number)</li>
+             <li> Comparison of sizes of pan-genomes and core-genomes among the groups (or subspecies)</li>
+             <li> Study of group-dominant and group-specific genes</li>
+      <br>
+         <p>What's more, by integrating other knowledge, many customized analyses can be carried out. We give some examples here.</p>
+
+             <li> Comparison of gene ages between core and distributed genes.</li>
+             <li> Comparison mutation rates between core and distributed genes.</li>
+             <li>Integrating phenotypes to carry out GWAS based on gene PAVs</li>
+             <p>.......</p>
+             <p>.......</p>
+        </ol>
+      <li> Bugs or Suggestions</li>
+
+         <p>We recommend to use tools with the exact version we mentioned. If you got errors, please first read the error files and try the recommended version. There are logs and error files for each step. Bugs should be sent to <a href="mailto:doodlehzq@sjtu.edu.cn">HZQ</a>. 
+         Pan-genome analysis using "map-to-pan" strategy is somewhat complex. We welcome the user's suggestion and discussion on any points involved in the pipeline.</p>
+    
+</ol>       
+      </section>
+		</div>
+	</div>
+	</div>
+	<br>
+	<div class="footer">
+		<hr>
+		<p>Copyright © 2016 The laboratory of computational genomics and metagenomics in Shanghai Jiao Tong University. All Rights Reserved</p>
+	</div>
+</body>
+</html>

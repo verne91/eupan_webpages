@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Installation</title>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+	<script src="js/jquery-2.1.4.min.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+	<div class="container">
+		<img src="images/eupan_logo.svg" alt="logo">
+		<div class="navbar navbar-default">
+			
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a href="index.html" class="navbar-brand">EUPAN</a>
+					<ul class="navbar-nav nav">
+						<li>
+							<a href="index.html">Home</a>
+						</li>
+						<li class="active"><a href="installation.html">Installation</a></li>
+						<li><a href="manual.html">Manual</a></li>
+						<li><a href="sop.html">SOP</a></li>
+						<li><a href="download.html">Download</a></li>
+					</ul>
+				</div>
+			</div>
+			
+		</div>
+		<h3>Requirements</h3>
+		<p> Although EUPAN toolbox integrates 10+ softwares, most of these softwares can be provided to the main program when the specific tool is selected. It is convenient for users working on supercomputers. To run the main program of EUPAN toolbox, you only need R and a few R packages.</p>
+		<ol>
+		  <li><p>R 3.1 or later</p>
+		    <p>R is utilized for visulization and statistical tests in EUPAN toolbox. Please install R first and make sure <i>R</i> and <i>Rscript</i> are under your <b>PATH</b>.</p> <p>Download R  <a href="https://www.r-project.org/">here</a>.</p></li>
+			<li><p>R packages</p><p>Several R packages are needed including <i>ggplot2</i>, <i>reshape2</i> and <i>ape</i> packages. Follow the Installation step 3 or you can install the packages by yourself.</p></li>
+		</ol>
+		<h3>Installation procedures</h3>
+		<ol>
+			<li><p> Download the EUPAN toolbox <a href="download.html">here</a>.</p></li>
+		    <li><p> Uncompress the EUPAN toolbox package.</p>
+          		<pre>tar zxvf EUPAN-v0.3.tar.gz</pre></li>
+		    <li><p> Install necessary R packages.</p>
+		          <pre>cd EUPAN
+Rscript installRPac</pre>
+		    </li>
+		    <li><p> Compile the source codes.</p>
+		          <pre>make</pre>
+		        <p>You will find executable files: <i>ccov</i> and <i>bam2cov</i> in <i>bin/</i> directory.</p>
+		    </li>
+            <li><p>Now all tools except QUAST have been installed. Next we'll install QUAST</p>
+                <pre>
+cd ../tools/
+tar -zxvf quast-3.2.tar.gz
+cd quast-3.2
+python quast.py --test
+cd ../EUPAN/</pre>
+            </li>
+
+
+		     <li><p> Add <i>bin/</i> to <b>PATH</b> and add <i>lib/</i> to <b>LD_LIBRARY_PATH</b>. <p>
+		        <p>To do this, edit your path in the following text and add the text to <code>~/.bash_profile</code></p>
+		        <pre>
+export PATH=$PATH:/path/to/EUPAN/bin:
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/EUPAN/lib/:
+export PERL5LIB=$PERL5LIB:/path/to/EUPAN/lib/:</pre>
+		        <p>and run</p>
+		           <pre>source ~/.bash_profile</pre>
+		    </li>
+		     <li><p> Test if EUPAN toolbox is installed successfully<p>
+		           <pre>eupan</pre>
+		       <p> If you could see the following content, congratulations! EUPAN toolbox is successfully installed. If not, see if all the requirements are satisfied; or you may contact the author for help.</p>
+				<pre>eupan tool list:
+        qualSta         View the overall sequencing quality of a large number of files
+        trim            Trim or filter low-quality reads parallelly
+        alignRead       Map reads to a reference parallelly
+        sam2bam         Covert alignments (.sam) to sorted .bam files
+        bamSta          Statistics of parallel mapping
+        assemble        Assemble reads parallelly
+        assemSta        Statistics of parallel assembly
+        getUnalnCtg     Extract the unaligned contigs from nucmer alignment (processed by quast)
+        rmRedundant     Remove redundant contigs of a fasta file
+        pTpG            Get the longest transcripts to represent genes
+        geneCov         Calculate gene body coverage and CDS coverage
+        geneExist       Determine gene presence-absence based on gene body coverage and CDS coverage
+        subSample       Select subset of samples from gene PAV profile
+        gFamExist       Determine gene family presence-absence based on gene presence-absence
+        bam2bed         Calculate genome region presence-absence from .bam
+        fastaSta        Calculate statistics of fasta file</pre>
+
+		    </li>
+		</ol>
+
+
+	</div>
+	<br>
+	<div class="footer">
+		<hr>
+		<p>Copyright © 2016 The laboratory of computational genomics and metagenomics in Shanghai Jiao Tong University. All Rights Reserved.</p>
+	</div>
+</body>
+</html>
