@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>EUPAN: Eukaryotic PAN-genome analysis toolkit</title>
+	<link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+	<script src="js/jquery-2.1.4.min.js"></script>
+	<script src="bootstrap/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+	<div class="container">
+		<img src="images/eupan_logo.svg" alt="logo">
+		<div class="navbar navbar-default">
+			
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a href="#" class="navbar-brand">EUPAN</a>
+					<ul class="navbar-nav nav">
+						<li class="active">
+							<a href="index.html">Home</a>
+						</li>
+						<li><a href="installation.html">Installation</a></li>
+						<li><a href="manual.html">Manual</a></li>
+						<li><a href="sop.html">SOP</a></li>
+						<li><a href="download.html">Download</a></li>
+					</ul>
+				</div>
+			</div>
+			
+		</div>
+	
+		<div class="row">
+			<div class="col-md-8">
+				<p>Pan-genome analyses of bacteria and archaea are routinely carried out to interpret the within-species variation. However, eukaryotic pan-genome analyses are limited by the large sizes and high complexities of their genomes. Therefore we develloped a new strategy ---- EUPAN, specific for eukaryotic pan-genome analyses. Based on our experience in the 3,000 rice genome project, EUPAN enables accurate detection of gene presence-absence variations (gene PAVs) at sequencing depth of ~20x. EUPAN can be directly applied to current large re-sequencing projects primarily aimming to explore single nucleotide variations (SNVs).</p>
+
+				<p>We proposed EUPAN strategy primarily in the 3,000 rice genome projects. EUPAN utilizes a "map-to-pan" strategy to determine gene PAVs of each individual. EUPAN strategy involves 
+				<ol>
+				<li> the parallel quality control of raw sequencing data;</li>
+					<li> de novo assembly of individual genomes;</li>
+					<li> construction of pan-genome sequences based on the de novo assemblies and available reference genomes;</li>
+					<li> gene annotation of the pan-genome sequences;</li>
+					<li> determination of PAVs based on mapping individual reads to pan-genome sequences;</li>
+					<li> PAV-based pan-genome analysis.
+				</ol></p>
+
+				<p>Eukaryotic large genome studies always involve big data and various softwares; and require very careful parameter selection process. Therfore EUPAN toolbox provides two versions of tools: 1) single machine version and 2) LSF version (working on supercomputer based on LSF system, in which, "bsub" is used to submit jobs).</p>
+				<img src="images/Fig-1-new.png" alt="fig1" style="width:700px">
+		<h3>Contact Information</h3>
+		<p>Zhi-Qiang Hu:  <a href="mailto:doodlehzq@sjtu.edu.cn">doodlehzq@sjtu.edu.cn</a>
+		<br>Chao-Chun Wei: <a href="mailto:ccwei@sjtu.edu.cn">ccwei@sjtu.edu.cn</a></p>
+			</div>
+			<div class="col-md-4">
+				<div class="panel panel-primary">
+					<div class="panel-heading">
+						<h3 class="panel-title">News</h3>
+					</div>
+					<div class="panel-body">
+						<ul>
+							<li>2016.4.6 version 0.3 released.</li>
+							<ul>
+							<li>Add a novel tool ----"sim", to simulate the pan-genome and core-genome size.</li>
+							<li>The "geneCov" tool is optimized to generate no intermediate files and its speed is faster. </li>
+							</ul>
+							<li>2016.3.25 version 0.2 released.</li>
+							<ul>
+							<li>Fix bugs in the parallelization of the "sam2bam" tool.</li>
+							</ul>
+							<li>2016.1.25 version 0.1 released.</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<br>
+	<div class="footer">
+		<hr>
+		<p>Copyright © 2016 The laboratory of computational genomics and metagenomics in Shanghai Jiao Tong University. All Rights Reserved.</p>
+	</div>
+</body>
+</html>
